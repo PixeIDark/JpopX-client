@@ -5,19 +5,43 @@
 @tailwind utilities;
 
 :root {
-    --background: #ffffff;
-    --foreground: #171717;
+    --color-text-h: #0D121C;
+    --color-text-p: #4F6696;
+    --color-text-white: #FFFFFF;
+    --color-body-default: #F7FAFC;
+    --color-input-input: #E8EBF2;
+    --color-button-outline: transparent;
+    --color-button-link: transparent;
+    --color-button-ghost: #E8EBF2;
+    --color-button-active: #1A5CE5;
+    --color-button-error: #FF4D4D;
+    --color-stroke-default: #E8EBF2;
+    --color-icon-stroke: #4F6696;
+    --color-icon-bg: #0D121C;
+    --color-solid-default: #D1D6E8;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --background: #0a0a0a;
-        --foreground: #ededed;
-    }
+:root[data-theme="dark"] {
+    --color-text-h: #FFFFFF;
+    --color-text-p: #94A6C7;
+    --color-text-white: #FFFFFF;
+    --color-body-default: #121721;
+    --color-input-input: #243047;
+    --color-button-outline: transparent;
+    --color-button-link: transparent;
+    --color-button-ghost: #243047;
+    --color-button-active: #1A5CE5;
+    --color-button-error: #FF4D4D;
+    --color-stroke-default: #243047;
+    --color-icon-stroke: #94A6C7;
+    --color-icon-bg: #FFFFFF;
+    --color-solid-default: #334566;
 }
 
 body {
-    color: var(--foreground);
-    background: var(--background);
+    padding: 0 16px;
+    color: var(--color-text-h);
+    background: var(--color-body-default);
     font-family: Pretendard Variable, system-ui, sans-serif;
+    transition: color 0.2s ease-in-out, background 0.2s ease-in-out;
 }
