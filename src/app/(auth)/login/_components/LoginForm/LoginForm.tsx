@@ -41,12 +41,12 @@ function LoginForm() {
         placeholder="Password"
         register={register}
       />
-      <p className="text-text-p -mt-2">Forgot password?</p>
+      <p className="-mt-2 text-text-p">Forgot password?</p>
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Loading" : "Log in"}
       </Button>
       <Button type="submit" variant="link" asChild>
-        <Link href="/">New User Sign Up</Link>
+        <Link href="/account">New User Sign Up</Link>
       </Button>
     </form>
   );
