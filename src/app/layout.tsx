@@ -3,7 +3,8 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import { getServerSession } from "next-auth";
-import SessionProvider from "@/app/_providers/sessionProvider";
+import SessionProvider from "@/app/_providers/SessionProvider";
+import QueryProvider from "@/app/_providers/QueryProvider";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -40,7 +41,9 @@ export default async function RootLayout({
         />
       </head>
       <SessionProvider session={session}>
-        <body className={`${manrope.variable} antialiased`}>{children}</body>
+        <QueryProvider>
+          <body className={`${manrope.variable} antialiased`}>{children}</body>
+        </QueryProvider>
       </SessionProvider>
     </html>
   );

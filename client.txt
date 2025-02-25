@@ -106,7 +106,7 @@ export default function LoginPage() {
 }
 
 
---- src/app/_providers/sessionProvider.tsx ---
+--- src/app/_providers/SessionProvider.tsx ---
 "use client";
 
 import React from "react";
