@@ -1,0 +1,1314 @@
+--- src/api/auth.ts ---
+import { axiosInstance } from "@/lib/axios/instance";
+import {
+  AccountRequest,
+  AccountResponse,
+  LoginRequest,
+  LoginResponse,
+  LogoutResponse,
+  RefreshRequest,
+  RefreshResponse,
+} from "@/types/auth.type";
+
+const url = "auth";
+
+export const authApi = {
+  account: (data: AccountRequest) => axiosInstance.post<AccountResponse>(`${url}/signup`, data),
+  login: (data: LoginRequest) => axiosInstance.post<LoginResponse>(`${url}/login`, data),
+  logout: () => axiosInstance.post<LogoutResponse>(`${url}/logout`),
+  refresh: (refreshToken: RefreshRequest) =>
+    axiosInstance.post<RefreshResponse>(`${url}/refresh`, { refreshToken }),
+};
+
+
+--- src/api/users.ts ---
+import { axiosInstance } from "@/lib/axios/instance";
+
+const url = "users";
+
+export const usersApi = {
+  all: () => axiosInstance.get<AllResponse>(`${url}`),
+  me: () => axiosInstance.get<MeResponse>(`${url}/me`),
+};
+
+
+--- src/app/(auth)/account/_components/AccountForm/AccountForm.tsx ---
+"use client";
+
+import { useForm } from "react-hook-form";
+import { accountSchema, AccountSchema } from "@/lib/zod/auth";
+import { zodResolver } from "@hookform/resolvers/zod";
+import TextField from "@/components/common/Field/TextField";
+import PasswordField from "@/components/common/Field/PasswordField";
+import Button from "@/components/ui/Button";
+import { authApi } from "@/api/auth";
+
+function AccountForm() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<AccountSchema>({
+    resolver: zodResolver(accountSchema),
+  });
+
+  const onSubmit = async (data: AccountSchema) => {
+    await authApi.account(data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="mt-3 flex flex-col gap-6">
+      <TextField
+        id="name"
+        name="name"
+        type="text"
+        error={errors.name}
+        placeholder="Your name"
+        register={register}
+      />
+      <TextField
+        id="email"
+        name="email"
+        type="email"
+        error={errors.email}
+        placeholder="Email Address"
+        register={register}
+      />
+      <PasswordField
+        id="password"
+        name="password"
+        error={errors.password}
+        placeholder="Password"
+        register={register}
+      />
+      <PasswordField
+        id="passwordConfirm"
+        name="passwordConfirm"
+        error={errors.passwordConfirm}
+        placeholder="Confirm Password"
+        register={register}
+      />
+      <Button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Loading" : "Account"}
+      </Button>
+    </form>
+  );
+}
+
+export default AccountForm;
+
+
+--- src/app/(auth)/account/_components/AccountForm/index.ts ---
+export { default } from "./AccountForm";
+
+
+--- src/app/(auth)/account/page.tsx ---
+import AccountForm from "@/app/(auth)/account/_components/AccountForm";
+
+function AccountPage() {
+  return (
+    <div>
+      <AccountForm />
+    </div>
+  );
+}
+
+export default AccountPage;
+
+
+--- src/app/(auth)/login/_components/LoginForm/LoginForm.tsx ---
+import { useForm } from "react-hook-form";
+import { loginSchema, LoginSchema } from "@/lib/zod/auth";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { signIn } from "next-auth/react";
+import TextField from "@/components/common/Field/TextField";
+import PasswordField from "@/components/common/Field/PasswordField";
+import Button from "@/components/ui/Button";
+import Link from "next/link";
+
+function LoginForm() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginSchema>({
+    resolver: zodResolver(loginSchema),
+  });
+
+  const onSubmit = async (data: LoginSchema) => {
+    await signIn("credentials", {
+      email: data.email,
+      password: data.password,
+      redirect: false,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="mt-3 flex flex-col gap-6">
+      <TextField
+        id="email"
+        name="email"
+        type="email"
+        error={errors.email}
+        placeholder="Email Address"
+        register={register}
+      />
+      <PasswordField
+        id="password"
+        name="password"
+        error={errors.password}
+        placeholder="Password"
+        register={register}
+      />
+      <p className="-mt-2 text-text-p">Forgot password?</p>
+      <Button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Loading" : "Log in"}
+      </Button>
+      <Button type="submit" variant="link" asChild>
+        <Link href="/account">New User Sign Up</Link>
+      </Button>
+    </form>
+  );
+}
+
+export default LoginForm;
+
+
+--- src/app/(auth)/login/_components/LoginForm/index.ts ---
+export { default } from "./LoginForm";
+
+
+--- src/app/(auth)/login/page.tsx ---
+"use client";
+
+import LoginForm from "@/app/(auth)/login/_components/LoginForm";
+
+export default function LoginPage() {
+  return (
+    <div>
+      <LoginForm />
+    </div>
+  );
+}
+
+
+--- src/app/_components/layout/BottomNav/BottomNavItem/BottomNavItem.tsx ---
+"use client";
+
+import React from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+
+interface BottomNavItemProps {
+  path: string;
+  label: string;
+  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  IconFill: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+}
+
+function BottomNavItem({ path, label, Icon, IconFill }: BottomNavItemProps) {
+  const pathname = usePathname();
+
+  const isActive = path === pathname;
+  return (
+    <Link href={path} className="flex w-16 flex-col items-center justify-center gap-1">
+      {isActive ? (
+        <IconFill width={24} height={24} className="fill-icon-bg" />
+      ) : (
+        <Icon width={24} height={24} className="fill-icon-stroke" />
+      )}
+      <p className="text-xs text-text-p">{label}</p>
+    </Link>
+  );
+}
+
+export default BottomNavItem;
+
+
+--- src/app/_components/layout/BottomNav/BottomNavItem/index.ts ---
+export { default } from "./BottomNavItem";
+
+
+--- src/app/_components/layout/BottomNav/BottomNav.tsx ---
+"use client";
+
+import Home from "@/assets/icons/home/home.svg";
+import HomeFill from "@/assets/icons/home/home_fill.svg";
+import BottomNavItem from "@/app/_components/layout/BottomNav/BottomNavItem";
+import { useSelectedLayoutSegment } from "next/navigation";
+
+function BottomNav() {
+  const segment = useSelectedLayoutSegment();
+  if (segment === "(auth)") return null;
+
+  const navItems = [
+    {
+      path: "/",
+      label: "home",
+      Icon: Home,
+      IconFill: HomeFill,
+    },
+  ];
+
+  return (
+    <div className="pt fixed bottom-0 -mx-4 flex w-full items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
+      {navItems.map((item) => (
+        <BottomNavItem
+          key={item.path}
+          path={item.path}
+          label={item.label}
+          Icon={item.Icon}
+          IconFill={item.IconFill}
+        />
+      ))}
+    </div>
+  );
+}
+
+export default BottomNav;
+
+
+--- src/app/_components/layout/BottomNav/index.ts ---
+export { default } from "./BottomNav";
+
+
+--- src/app/_components/layout/TopNav/TopNav.tsx ---
+"use client";
+
+import { ArrowLeft } from "lucide-react";
+import ThemeToggle from "@/app/_components/ThemeToggle";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+
+const NAV_TITLE = {
+  "/": "Home",
+  "/login": "Login",
+  "/account": "Account",
+} as const;
+
+type NavPath = keyof typeof NAV_TITLE;
+
+function TopNav() {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const title = pathname in NAV_TITLE ? NAV_TITLE[pathname as NavPath] : "Unknown Page";
+
+  return (
+    <div className="pt sticky top-0 -mx-4 flex items-center justify-between border-b border-solid-default bg-body-default px-4 pb-3 pt-5">
+      <button onClick={() => router.back()}>
+        <ArrowLeft size={24} strokeWidth={1.5} />
+      </button>
+      <Link href="/">
+        <h1 className="text-lg font-semibold text-text-h">{title}</h1>
+      </Link>
+      <ThemeToggle />
+    </div>
+  );
+}
+
+export default TopNav;
+
+
+--- src/app/_components/layout/TopNav/index.ts ---
+export { default } from "./TopNav";
+
+
+--- src/app/_components/ThemeToggle.tsx ---
+"use client";
+
+import { useTheme } from "@/hooks/useTheme";
+import { useEffect, useState } from "react";
+
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // 마운트 된 후에만 UI 렌더링
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // 마운트되기 전에는 아무것도 표시하지 않음
+  if (!mounted) {
+    return <div className="h-8 w-8"></div>; // 빈 공간 유지
+  }
+
+  return (
+    <button
+      onClick={toggleTheme}
+      className="hover:bg-button-ghost rounded-md p-2"
+      aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+    >
+      {theme === "light" ? "🌙" : "☀️"}
+    </button>
+  );
+}
+
+export default ThemeToggle;
+
+
+--- src/app/_providers/QueryProvider.tsx ---
+"use client";
+
+import { isServer, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import * as React from "react";
+import { ReactQueryStreamedHydration } from "@tanstack/react-query-next-experimental";
+
+const makeQueryClient = () => {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 60 * 1000,
+      },
+    },
+  });
+};
+
+let browserQueryClient: QueryClient | undefined = undefined;
+
+const getQueryClient = () => {
+  if (isServer) {
+    return makeQueryClient();
+  } else {
+    if (!browserQueryClient) browserQueryClient = makeQueryClient();
+    return browserQueryClient;
+  }
+};
+
+function QueryProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = getQueryClient();
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ReactQueryStreamedHydration>{children}</ReactQueryStreamedHydration>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
+  );
+}
+
+export default QueryProvider;
+
+
+--- src/app/_providers/SessionProvider.tsx ---
+"use client";
+
+import React from "react";
+import { SessionProvider as Provider } from "next-auth/react";
+
+interface SessionProviderProps {
+  children: React.ReactNode;
+  session: any;
+}
+
+function SessionProvider({ children, session }: SessionProviderProps) {
+  return <Provider session={session}>{children}</Provider>;
+}
+
+export default SessionProvider;
+
+
+--- src/app/api/auth/[...nextauth]/route.ts ---
+import NextAuth from "next-auth";
+import { authOptions } from "@/lib/next-auth/nextAuth";
+
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST };
+
+
+--- src/app/layout.tsx ---
+import React from "react";
+import "./globals.css";
+import type { Metadata } from "next";
+import { Manrope } from "next/font/google";
+import { getServerSession } from "next-auth";
+import SessionProvider from "@/app/_providers/SessionProvider";
+import QueryProvider from "@/app/_providers/QueryProvider";
+import TopNav from "@/app/_components/layout/TopNav";
+import BottomNav from "@/app/_components/layout/BottomNav";
+
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+export const metadata: Metadata = {
+  title: "App",
+  description: "Generated by create next app",
+};
+
+async function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const session = await getServerSession();
+
+  return (
+    <html lang="ko" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                const savedTheme = localStorage.getItem('theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
+      <body className={`${manrope.variable} antialiased`}>
+        <SessionProvider session={session}>
+          <QueryProvider>
+            <TopNav />
+            {children}
+            <BottomNav />
+          </QueryProvider>
+        </SessionProvider>
+      </body>
+    </html>
+  );
+}
+
+export default RootLayout;
+
+
+--- src/app/page.tsx ---
+import Button from "@/components/ui/Button";
+import Link from "next/link";
+import React from "react";
+
+async function HomePage() {
+  return (
+    <div>
+      <Button>outline</Button>
+      <Button variant="link">link</Button>
+      <Button variant="ghost">ghost</Button>
+      <Button variant="active">active</Button>
+      <Button variant="error" asChild>
+        <Link href="/login">go to page</Link>
+      </Button>
+      <p>
+        l lorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem
+        ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem
+        ipsumlorem ipsum Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
+        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
+        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
+        dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus
+        ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet
+        ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing
+        elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam
+        risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel
+        laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur
+        laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus,
+        congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet,
+        consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus
+        efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce
+        dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit
+        amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque
+        dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna.
+        Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet.Lorem ipsum dolor
+        sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis.
+        Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat,
+        ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec
+        aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar
+        tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a
+        molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae
+        odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
+        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
+        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
+        dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus
+        ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet
+        ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing
+        elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam
+        risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel
+        laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur
+        laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus,
+        congue vel laoreet ac, dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet,
+        consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus
+        efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce
+        dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit
+        amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque
+        dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna.
+        Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor
+        sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis.
+        Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat,
+        ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec
+        aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor
+        nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie
+        consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio.
+        Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar
+        tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a
+        molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae
+        odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
+        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
+        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
+        dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus
+        ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet
+        ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing
+        elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam
+        risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel
+        laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur
+        laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus,
+        congue vel laoreet ac, dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet,
+        consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus
+        efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce
+        dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit
+        amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque
+        dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna.
+        Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor
+        sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis.
+        Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat,
+        ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec
+        aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor
+        nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie
+        consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio.
+        Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar
+        tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a
+        molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae
+        odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
+        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
+        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
+        dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus
+        ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet
+        ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing
+        elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam
+        risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel
+        laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur
+        laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus,
+        congue vel laoreet ac, dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet,
+        consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus
+        efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce
+        dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit
+        amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque
+        dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna.
+        Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor
+        sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis.
+        Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat,
+        ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec
+        aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor
+        nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie
+        consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio.
+        Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar
+        tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a
+        molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae
+        odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
+        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
+        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
+        dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus
+        ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet
+        ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing
+        elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam
+        risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel
+        laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur
+        laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus,
+        congue vel laoreet ac, dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet,
+        consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus
+        efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce
+        dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit
+        amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque
+        dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna.
+        Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor
+        sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis.
+        Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat,
+        ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec
+        aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor
+        nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie
+        consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio.
+        Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar
+        tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a
+        molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae
+        odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
+        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
+        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
+        dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus
+        ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet
+        ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing
+        elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam
+        risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel
+        laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur
+        laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus,
+        congue vel laoreet ac, dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet,
+        consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus
+        efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce
+        dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit
+        amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque
+        dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna.
+        Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor
+        sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis.
+        Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat,
+        ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec
+        aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor
+        nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie
+        consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio.
+        Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar
+        tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a
+        molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae
+        odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
+        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
+        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
+        dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+        Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus
+        ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet
+        ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing
+        elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam
+        risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel
+        laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur
+        adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur
+        laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus,
+        congue vel laoreet ac, dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet,
+        consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus
+        efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce
+        dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit
+        amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque
+        dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna.
+        Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor
+        sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis.
+        Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat,
+        ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec
+        aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor
+        nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie
+        consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio.
+        Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar
+        tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a
+        molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae
+        odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
+        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
+        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
+        dictum vitae odio. Donec aliquet.
+      </p>
+    </div>
+  );
+}
+
+export default HomePage;
+
+
+--- src/components/common/Field/ErrorMessage/ErrorMessage.tsx ---
+import { FieldError } from "react-hook-form";
+
+function ErrorMessage({ error }: { error: FieldError | undefined }) {
+  if (!error) return null;
+
+  return <p className="text-button-error mt-1 text-sm">{error.message}</p>;
+}
+
+export default ErrorMessage;
+
+
+--- src/components/common/Field/ErrorMessage/index.ts ---
+export { default } from "./ErrorMessage";
+
+
+--- src/components/common/Field/PasswordField/EyeButton/EyeButton.tsx ---
+import React, { MouseEventHandler } from "react";
+import { Eye, EyeOff } from "lucide-react";
+
+interface EyeButtonProps {
+  showPassword: boolean;
+  togglePassword: MouseEventHandler<HTMLButtonElement>;
+}
+
+function EyeButton({ showPassword, togglePassword }: EyeButtonProps) {
+  return (
+    <button
+      type="button"
+      className="absolute right-4 top-1/2 -translate-y-1/2"
+      onClick={togglePassword}
+      aria-label={showPassword ? "Hide password" : "Show password"}
+    >
+      {showPassword ? (
+        <EyeOff strokeWidth={1.5} size={24} className="text-icon-stroke" />
+      ) : (
+        <Eye strokeWidth={1.5} size={24} className="text-icon-stroke" />
+      )}
+    </button>
+  );
+}
+
+export default EyeButton;
+
+
+--- src/components/common/Field/PasswordField/EyeButton/index.ts ---
+export { default } from "./EyeButton";
+
+
+--- src/components/common/Field/PasswordField/hooks/useInvisiblePassword.ts ---
+import { useState } from "react";
+
+export function useInvisiblePassword() {
+  const [showPassword, setShowPassword] = useState(false);
+
+  const togglePassword = () => setShowPassword(!showPassword);
+
+  return { showPassword, togglePassword };
+}
+
+
+--- src/components/common/Field/PasswordField/PasswordField.tsx ---
+"use client";
+
+import Input from "@/components/ui/Input";
+import { FieldError, Path, UseFormRegister } from "react-hook-form";
+import ErrorMessage from "@/components/common/Field/ErrorMessage";
+import { useInvisiblePassword } from "@/components/common/Field/PasswordField/hooks/useInvisiblePassword";
+import EyeButton from "@/components/common/Field/PasswordField/EyeButton";
+
+interface PasswordFieldProps<T extends Record<string, any>> {
+  id?: string;
+  name: Path<T>;
+  placeholder?: string;
+  register: UseFormRegister<T>;
+  error?: FieldError;
+  className?: string;
+}
+
+function PasswordField<T extends Record<string, any>>({
+  id = "password",
+  name,
+  placeholder = "Password",
+  register,
+  error,
+  className,
+}: PasswordFieldProps<T>) {
+  const { showPassword, togglePassword } = useInvisiblePassword();
+
+  return (
+    <div>
+      <div className={`relative ${className || ""}`}>
+        <label htmlFor={id} />
+        <Input
+          id={id}
+          type={showPassword ? "text" : "password"}
+          placeholder={placeholder}
+          {...register(name)}
+        />
+        <EyeButton showPassword={showPassword} togglePassword={togglePassword} />
+      </div>
+      <ErrorMessage error={error} />
+    </div>
+  );
+}
+
+export default PasswordField;
+
+
+--- src/components/common/Field/PasswordField/index.ts ---
+export { default } from "./PasswordField";
+
+
+--- src/components/common/Field/TextField/TextField.tsx ---
+"use client";
+
+import { FieldError, Path, UseFormRegister } from "react-hook-form";
+import Input from "@/components/ui/Input";
+import ErrorMessage from "@/components/common/Field/ErrorMessage";
+
+interface TextFieldProps<T extends Record<string, any>> {
+  id: string;
+  name: Path<T>;
+  type?: string;
+  placeholder?: string;
+  register: UseFormRegister<T>;
+  error?: FieldError;
+  className?: string;
+}
+
+function TextField<T extends Record<string, any>>({
+  id,
+  name,
+  type = "text",
+  placeholder,
+  register,
+  error,
+  className,
+}: TextFieldProps<T>) {
+  return (
+    <div className={className}>
+      <label htmlFor={id} />
+      <Input id={id} type={type} placeholder={placeholder} {...register(name)} />
+      <ErrorMessage error={error} />
+    </div>
+  );
+}
+
+export default TextField;
+
+
+--- src/components/common/Field/TextField/index.ts ---
+export { default } from "./TextField";
+
+
+--- src/components/ui/Button/Button.tsx ---
+import React from "react";
+
+const styles = {
+  outline: "bg-button-outline border border-stroke-default",
+  link: "bg-button-link",
+  ghost: "bg-button-ghost",
+  active: "bg-button-active text-text-white",
+  error: "bg-button-error text-text-white",
+} as const;
+
+type ButtonVariant = keyof typeof styles;
+
+interface ButtonProps extends React.ComponentProps<"button"> {
+  variant?: ButtonVariant;
+  asChild?: boolean;
+}
+
+function Button({
+  children,
+  onClick,
+  variant = "outline",
+  className,
+  asChild = false,
+  ...props
+}: ButtonProps) {
+  const buttonStyles = `${className || ""} ${styles[variant]} hover:brightness-90 hover:shadow-md flex justify-center items-center bg-button-active text-text-h h-12 w-full rounded-xl text-base font-semibold transition-all duration-200`;
+
+  if (asChild && React.isValidElement(children)) {
+    const childProps = children.props as any;
+    const childOnClick = childProps.onClick;
+
+    const combinedOnClick =
+      onClick || childOnClick
+        ? (e: React.MouseEvent<Element, MouseEvent>) => {
+            if (onClick) onClick(e as React.MouseEvent<HTMLButtonElement>);
+            if (childOnClick) childOnClick(e);
+          }
+        : undefined;
+
+    return React.cloneElement(children, {
+      ...childProps,
+      ...props,
+      onClick: combinedOnClick,
+      className: `${childProps.className || ""} ${buttonStyles}`,
+    });
+  }
+
+  return (
+    <button onClick={onClick} className={buttonStyles} {...props}>
+      {children}
+    </button>
+  );
+}
+
+export default Button;
+
+
+--- src/components/ui/Button/index.ts ---
+export { default } from "./Button";
+
+
+--- src/components/ui/Input/Input.tsx ---
+import React from "react";
+
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+  return (
+    <input
+      type={type}
+      className={`${className || ""}bg-input-input flex h-14 w-full items-center justify-center rounded-xl p-4 text-base text-text-h placeholder:text-text-p focus:outline-none focus:ring-1 focus:ring-solid-default`}
+      {...props}
+    />
+  );
+}
+
+export default Input;
+
+
+--- src/components/ui/Input/index.ts ---
+export { default } from "./Input";
+
+
+--- src/hooks/useTheme.ts ---
+"use client";
+
+import { useEffect, useState } from "react";
+import { applyTheme } from "@/utils/applyTheme";
+
+type Theme = "light" | "dark";
+
+export function useTheme() {
+  const [theme, setTheme] = useState<Theme>("light");
+
+  useEffect(() => {
+    try {
+      const currentTheme = document.documentElement.getAttribute("data-theme") as Theme;
+      if (currentTheme) {
+        setTheme(currentTheme);
+      }
+    } catch (error) {
+      console.error("Error reading theme:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = (e: MediaQueryListEvent) => {
+      if (!localStorage.getItem("theme")) {
+        const newTheme = e.matches ? "dark" : "light";
+        setTheme(newTheme);
+        applyTheme(newTheme);
+      }
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === "light" ? "dark" : "light";
+    setTheme(newTheme);
+    applyTheme(newTheme);
+  };
+
+  return {
+    theme,
+    toggleTheme,
+    isDark: theme === "dark",
+  };
+}
+
+
+--- src/lib/axios/instance.ts ---
+import axios from "axios";
+import { getServerSession } from "next-auth";
+import { RefreshRequest, RefreshResponse } from "@/types/auth.type";
+import { signIn } from "next-auth/react";
+
+export const axiosInstance = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  timeout: 1000,
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+});
+
+axiosInstance.interceptors.request.use(
+  async function (config) {
+    try {
+      const session = await getServerSession();
+
+      if (session?.user?.accessToken) {
+        config.headers.Authorization = `Bearer ${session.user.accessToken}`;
+      }
+
+      return config;
+    } catch (error) {
+      console.error("Request interceptor error:", error);
+      return config;
+    }
+  },
+  function (error) {
+    return Promise.reject(error);
+  }
+);
+
+async function refreshAccessToken(refreshToken: RefreshRequest) {
+  try {
+    const response = await axios.post<RefreshResponse>(
+      `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+      { refreshToken },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Token refresh failed:", error);
+    throw error;
+  }
+}
+
+axiosInstance.interceptors.response.use(
+  function (response) {
+    return response;
+  },
+  async function (error) {
+    const originalRequest = error.config;
+
+    if (originalRequest._retry === 3) {
+      return Promise.reject(error);
+    }
+
+    if (error.response && error.response.status === 401) {
+      originalRequest._retry ??= 1;
+      originalRequest._retry++;
+
+      try {
+        const session = await getServerSession();
+
+        if (!session?.user?.refreshToken) {
+          // 리프레시 토큰이 없으면 로그인 페이지로 리디렉션 로직 추가 가능
+          return Promise.reject(error);
+        }
+
+        const refreshToken = session.user.refreshToken;
+        const data = await refreshAccessToken(refreshToken);
+
+        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+
+        await signIn("Refresh", {
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          redirect: false,
+        });
+
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        // 리프레시 실패 시 로그아웃 처리 등 구현 가능
+        console.error("Token refresh failed:", refreshError);
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+
+--- src/lib/next-auth/nextAuth.ts ---
+import { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { authApi } from "@/api/auth";
+import axios from "axios";
+
+export const authOptions: NextAuthOptions = {
+  providers: [
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        try {
+          if (!credentials?.email || !credentials?.password) return null;
+
+          const response = await authApi.login(credentials);
+
+          const { user, accessToken, refreshToken } = response.data;
+
+          if (user && accessToken) {
+            return {
+              accessToken,
+              refreshToken,
+              id: user.id,
+              email: user.email,
+              name: user.name,
+            };
+          }
+
+          return null;
+        } catch (error) {
+          return null;
+        }
+      },
+    }),
+    CredentialsProvider({
+      name: "Refresh",
+      credentials: {
+        refreshToken: { label: "RefreshToken", type: "refresh_token" },
+        accessToken: { label: "AccessToken", type: "access_token" },
+      },
+      async authorize(credentials) {
+        try {
+          if (!credentials?.accessToken || !credentials?.refreshToken) return null;
+
+          const { accessToken, refreshToken } = credentials;
+          const { data } = await axios.get<MeResponse>(
+            `${process.env.NEXT_PUBLIC_API_URL}users/me`,
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+
+          return {
+            accessToken,
+            refreshToken,
+            id: data.id,
+            email: data.email,
+            name: data.name,
+          };
+        } catch (error) {
+          return null;
+        }
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.accessToken = user.accessToken;
+        token.refreshToken = user.refreshToken;
+        token.id = Number(user.id);
+        token.name = user.name;
+        token.email = user.email;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user = token;
+      }
+      return session;
+    },
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 7 * 24 * 60 * 60,
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+};
+
+
+--- src/lib/next-auth/nextAuth.type.d.ts ---
+import { DefaultSession } from "next-auth";
+
+declare module "next-auth" {
+  interface Session {
+    user: {
+      accessToken: string;
+      refreshToken: string;
+      id: number;
+      name: string;
+      email: string;
+    } & DefaultSession["user"];
+  }
+
+  interface User {
+    accessToken: string;
+    refreshToken: string;
+    id: number;
+    name: string;
+    email: string;
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    accessToken: string;
+    refreshToken: string;
+    id: number;
+    name: string;
+    email: string;
+  }
+}
+
+
+--- src/lib/zod/auth.ts ---
+import { z } from "zod";
+
+const email = z.string().min(1, "이메일을 입력해주세요").email("올바른 이메일 형식이 아닙니다");
+const name = z.string().min(1, "이름을 입력해주세요");
+const password = z
+  .string()
+  .min(1, "비밀번호를 입력해주세요")
+  .min(8, "비밀번호는 8자 이상이어야 합니다");
+const passwordConfirm = z.string().min(1, "비밀번호 확인을 입력해주세요");
+
+export const loginSchema = z.object({
+  email,
+  password,
+});
+
+export const accountSchema = z
+  .object({
+    email,
+    name,
+    password,
+    passwordConfirm,
+  })
+  .refine((data) => data.password === data.passwordConfirm, {
+    message: "비밀번호가 일치하지 않습니다",
+    path: ["passwordConfirm"],
+  });
+
+export type LoginSchema = z.infer<typeof loginSchema>;
+export type AccountSchema = z.infer<typeof accountSchema>;
+
+
+--- src/types/auth.type.ts ---
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+export interface AccountRequest {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export type AccountResponse = string;
+
+export type LoginRequest = Omit<AccountRequest, "name">;
+
+export interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: User;
+}
+
+export type LogoutResponse = string;
+
+export type RefreshRequest = string;
+
+export interface RefreshResponse {
+  accessToken: string;
+  refreshToken: string;
+}
+
+
+--- src/types/users.type.ts ---
+interface MeResponse {
+  id: number;
+  name: string;
+  email: string;
+  profile_image_url: string;
+  created_at: string;
+  updated_at: string;
+}
+
+type AllResponse = MeResponse[];
+
+
+--- src/utils/applyTheme.ts ---
+type Theme = "light" | "dark";
+
+export const applyTheme = (newTheme: Theme) => {
+  if (typeof document !== "undefined") {
+    document.documentElement.setAttribute("data-theme", newTheme);
+    localStorage.setItem("theme", newTheme);
+  }
+};
+
+

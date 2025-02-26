@@ -1,0 +1,95 @@
+src
+├── api
+│   ├── auth.ts
+│   └── users.ts
+├── app
+│   ├── (auth)
+│   │   ├── account
+│   │   │   ├── _components
+│   │   │   │   └── AccountForm
+│   │   │   │       ├── AccountForm.tsx
+│   │   │   │       └── index.ts
+│   │   │   └── page.tsx
+│   │   └── login
+│   │       ├── _components
+│   │       │   └── LoginForm
+│   │       │       ├── LoginForm.tsx
+│   │       │       └── index.ts
+│   │       └── page.tsx
+│   ├── _components
+│   │   ├── ThemeToggle.tsx
+│   │   └── layout
+│   │       ├── BottomNav
+│   │       │   ├── BottomNav.tsx
+│   │       │   ├── BottomNavItem
+│   │       │   │   ├── BottomNavItem.tsx
+│   │       │   │   └── index.ts
+│   │       │   └── index.ts
+│   │       └── TopNav
+│   │           ├── TopNav.tsx
+│   │           └── index.ts
+│   ├── _providers
+│   │   ├── QueryProvider.tsx
+│   │   └── SessionProvider.tsx
+│   ├── api
+│   │   └── auth
+│   │       └── [...nextauth]
+│   │           └── route.ts
+│   ├── favicon.ico
+│   ├── globals.css
+│   ├── layout.tsx
+│   └── page.tsx
+├── assets
+│   └── icons
+│       ├── home
+│       │   ├── home.svg
+│       │   └── home_fill.svg
+│       ├── myLists
+│       │   ├── myLists.svg
+│       │   └── myLists_fill.svg
+│       ├── profile
+│       │   └── profile.svg
+│       └── search
+│           ├── search.svg
+│           └── search_fill.svg
+├── components
+│   ├── common
+│   │   └── Field
+│   │       ├── ErrorMessage
+│   │       │   ├── ErrorMessage.tsx
+│   │       │   └── index.ts
+│   │       ├── PasswordField
+│   │       │   ├── EyeButton
+│   │       │   │   ├── EyeButton.tsx
+│   │       │   │   └── index.ts
+│   │       │   ├── PasswordField.tsx
+│   │       │   ├── hooks
+│   │       │   │   └── useInvisiblePassword.ts
+│   │       │   └── index.ts
+│   │       └── TextField
+│   │           ├── TextField.tsx
+│   │           └── index.ts
+│   └── ui
+│       ├── Button
+│       │   ├── Button.tsx
+│       │   └── index.ts
+│       └── Input
+│           ├── Input.tsx
+│           └── index.ts
+├── hooks
+│   └── useTheme.ts
+├── lib
+│   ├── axios
+│   │   └── instance.ts
+│   ├── next-auth
+│   │   ├── nextAuth.ts
+│   │   └── nextAuth.type.d.ts
+│   └── zod
+│       └── auth.ts
+├── types
+│   ├── auth.type.ts
+│   └── users.type.ts
+└── utils
+    └── applyTheme.ts
+
+43 directories, 50 files

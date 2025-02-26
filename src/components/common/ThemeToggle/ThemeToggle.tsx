@@ -1,17 +1,12 @@
 "use client";
 
 import { useTheme } from "@/components/common/ThemeToggle/_hooks/useTheme";
-import { useEffect, useState } from "react";
 import { MdLightMode, MdOutlineNightlightRound } from "react-icons/md";
+import { useMounted } from "@/hooks/useMounted";
 
 function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  // 마운트 된 후에만 UI 렌더링
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const { mounted } = useMounted();
 
   // 마운트되기 전에는 아무것도 표시하지 않음
   if (!mounted) {
