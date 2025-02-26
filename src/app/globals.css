@@ -43,5 +43,4 @@ body {
     color: var(--color-text-h);
     background: var(--color-body-default);
     font-family: Pretendard Variable, system-ui, sans-serif;
-    transition: color 0.2s ease-in-out, background 0.2s ease-in-out;
 }
