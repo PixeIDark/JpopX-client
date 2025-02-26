@@ -8,6 +8,7 @@ import QueryProvider from "@/app/_providers/QueryProvider";
 import TopNav from "@/app/_components/layout/TopNav";
 import BottomNav from "@/app/_components/layout/BottomNav";
 import { authOptions } from "@/lib/next-auth/nextAuth";
+import ToastProvider from "@/components/ui/Toast/ToastContext";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -43,12 +44,14 @@ async function RootLayout({
           }}
         />
       </head>
-      <body className={`${manrope.variable} antialiased`}>
+      <body className={`${manrope.variable} antialiasing`}>
         <SessionProvider session={session}>
           <QueryProvider>
-            <TopNav />
-            {children}
-            <BottomNav />
+            <ToastProvider maxToasts={5}>
+              <TopNav />
+              {children}
+              <BottomNav />
+            </ToastProvider>
           </QueryProvider>
         </SessionProvider>
       </body>
