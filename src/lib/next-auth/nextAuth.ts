@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { authApi } from "@/api/auth";
+import axios from "axios";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -29,6 +30,40 @@ export const authOptions: NextAuthOptions = {
           }
 
           return null;
+        } catch (error) {
+          return null;
+        }
+      },
+    }),
+    CredentialsProvider({
+      name: "Refresh",
+      credentials: {
+        refreshToken: { label: "RefreshToken", type: "refresh_token" },
+        accessToken: { label: "AccessToken", type: "access_token" },
+      },
+      async authorize(credentials) {
+        try {
+          if (!credentials?.accessToken || !credentials?.refreshToken) return null;
+
+          const { accessToken, refreshToken } = credentials;
+          const { data } = await axios.get<MeResponse>(
+            `${process.env.NEXT_PUBLIC_API_URL}users/me`,
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+
+          return {
+            accessToken,
+            refreshToken,
+            id: data.id,
+            email: data.email,
+            name: data.name,
+          };
         } catch (error) {
           return null;
         }
