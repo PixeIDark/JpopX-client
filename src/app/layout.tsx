@@ -7,6 +7,7 @@ import SessionProvider from "@/app/_providers/SessionProvider";
 import QueryProvider from "@/app/_providers/QueryProvider";
 import TopNav from "@/app/_components/layout/TopNav";
 import BottomNav from "@/app/_components/layout/BottomNav";
+import { authOptions } from "@/lib/next-auth/nextAuth";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -24,7 +25,7 @@ async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
 
   return (
     <html lang="ko" suppressHydrationWarning>
