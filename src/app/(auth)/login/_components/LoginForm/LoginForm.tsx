@@ -3,11 +3,11 @@
 import { useForm } from "react-hook-form";
 import { loginSchema, LoginSchema } from "@/lib/zod/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
 import TextField from "@/components/common/Field/TextField";
 import PasswordField from "@/components/common/Field/PasswordField";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
+import { useLoginMutation } from "@/query/auth/mutations/useLoginMutation";
 
 function LoginForm() {
   const {
@@ -17,14 +17,13 @@ function LoginForm() {
   } = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
   });
+  const { mutate: loginMutate } = useLoginMutation();
 
-  const onSubmit = async (data: LoginSchema) => {
-    await signIn("credentials", {
+  const onSubmit = (data: LoginSchema) =>
+    loginMutate({
       email: data.email,
       password: data.password,
-      redirect: false,
     });
-  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="mt-3 flex flex-col gap-6">

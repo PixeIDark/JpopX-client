@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import TextField from "@/components/common/Field/TextField";
 import PasswordField from "@/components/common/Field/PasswordField";
 import Button from "@/components/ui/Button";
-import { authApi } from "@/api/auth";
+import { useAccountMutation } from "@/query/auth/mutations/useAccountMutation";
 
 function AccountForm() {
   const {
@@ -16,10 +16,9 @@ function AccountForm() {
   } = useForm<AccountSchema>({
     resolver: zodResolver(accountSchema),
   });
+  const { mutate: accountMutate } = useAccountMutation();
 
-  const onSubmit = async (data: AccountSchema) => {
-    await authApi.account(data);
-  };
+  const onSubmit = (data: AccountSchema) => accountMutate(data);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="mt-3 flex flex-col gap-6">

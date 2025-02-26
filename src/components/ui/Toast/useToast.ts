@@ -19,12 +19,8 @@ export function useToast() {
   const { toast: showToast, removeToast } = context;
 
   const toast = Object.assign((options: ToastOptions) => showToast(options), {
-    info: (message: string, title?: string, duration?: number) =>
-      showToast({ message, title, type: "info", duration }),
     success: (message: string, title?: string, duration?: number) =>
       showToast({ message, title, type: "success", duration }),
-    warning: (message: string, title?: string, duration?: number) =>
-      showToast({ message, title, type: "warning", duration }),
     error: (message: string, title?: string, duration?: number) =>
       showToast({ message, title, type: "error", duration }),
     dismiss: (id: string) => removeToast(id),
