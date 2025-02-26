@@ -1,6 +1,6 @@
 import axios from "axios";
 import { RefreshRequest, RefreshResponse } from "@/types/auth.type";
-import { signIn, signOut } from "next-auth/react";
+import { getSession, signIn, signOut } from "next-auth/react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/next-auth/nextAuth";
 
@@ -16,7 +16,10 @@ export const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   async function (config) {
     try {
-      const session = await getServerSession(authOptions);
+      let session;
+      if (typeof window === "undefined") session = await getServerSession(authOptions);
+      else session = await getSession();
+
       if (session?.user?.accessToken) {
         config.headers.Authorization = `Bearer ${session.user.accessToken}`;
       }
@@ -68,10 +71,13 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry++;
 
       try {
-        const session = await getServerSession(authOptions);
+        let session;
+        if (typeof window === "undefined") session = await getServerSession(authOptions);
+        else session = await getSession();
 
         if (!session?.user?.refreshToken) {
           // 리프레시 토큰이 없으면 로그인 페이지로 리디렉션 로직 추가 가능
+          // 해줘야 할까? signIn 호출하면 자동으로 next-auth 가 실패 시 해줄 꺼 같은데
           return Promise.reject(error);
         }
 
