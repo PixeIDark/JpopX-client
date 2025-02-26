@@ -7,7 +7,7 @@ const TOAST_LIFETIME = 3 * 1000;
 
 const styles = {
   success: "border-l-button-active text-button-active",
-  error: "border-button-error text-button-error",
+  error: "border-l-button-error text-button-error",
 } as const;
 
 export type ToastType = "success" | "error";
@@ -51,7 +51,7 @@ function Toast({
     >
       <div>
         {title && <h1 className="font-bold">{title}</h1>}
-        <p className="text-text-p">{message}</p>
+        <p className="text-sm text-text-p">{message}</p>
       </div>
       {isHovered && (
         <button
