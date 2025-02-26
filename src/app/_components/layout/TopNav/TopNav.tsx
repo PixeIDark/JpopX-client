@@ -1,9 +1,9 @@
 "use client";
 
 import { ArrowLeft } from "lucide-react";
-import ThemeToggle from "@/app/_components/ThemeToggle";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import ThemeToggle from "@/components/common/ThemeToggle";
 
 const NAV_TITLE = {
   "/": "Home",
