@@ -1,12 +1,11 @@
 import axios from "axios";
-import { RefreshRequest, RefreshResponse } from "@/types/auth.type";
-import { getSession, signIn, signOut } from "next-auth/react";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/next-auth/nextAuth";
+import { signIn, signOut } from "next-auth/react";
+import { authApi } from "@/api/auth";
+import { getIsomorphicSession } from "@/utils/getIsomorphicSession";
 
 export const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
-  timeout: 1000,
+  timeout: 3000,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -16,9 +15,7 @@ export const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   async function (config) {
     try {
-      let session;
-      if (typeof window === "undefined") session = await getServerSession(authOptions);
-      else session = await getSession();
+      const session = await getIsomorphicSession();
 
       if (session?.user?.accessToken) {
         config.headers.Authorization = `Bearer ${session.user.accessToken}`;
@@ -35,25 +32,6 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-async function refreshAccessToken(refreshToken: RefreshRequest) {
-  try {
-    const response = await axios.post<RefreshResponse>(
-      `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-      { refreshToken },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Token refresh failed:", error);
-    throw error;
-  }
-}
-
 axiosInstance.interceptors.response.use(
   function (response) {
     return response;
@@ -62,7 +40,7 @@ axiosInstance.interceptors.response.use(
     const originalRequest = error.config;
 
     if (originalRequest._retry === 3) {
-      await signOut({ redirect: true, callbackUrl: "/login?error=RefreshTokenFailed" });
+      await signOut({ redirect: true, callbackUrl: "/login" });
       return Promise.reject(error);
     }
 
@@ -71,19 +49,15 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry++;
 
       try {
-        let session;
-        if (typeof window === "undefined") session = await getServerSession(authOptions);
-        else session = await getSession();
+        const session = await getIsomorphicSession();
 
         if (!session?.user?.refreshToken) {
-          // 리프레시 토큰이 없으면 로그인 페이지로 리디렉션 로직 추가 가능
-          // 해줘야 할까? signIn 호출하면 자동으로 next-auth 가 실패 시 해줄 꺼 같은데
+          await signOut({ redirect: true, callbackUrl: "/login" });
           return Promise.reject(error);
         }
 
         const refreshToken = session.user.refreshToken;
-        const data = await refreshAccessToken(refreshToken);
-
+        const data = await authApi.refresh(refreshToken);
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
 
         await signIn("Refresh", {
@@ -94,10 +68,7 @@ axiosInstance.interceptors.response.use(
 
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        // 리프레시 실패 시 로그아웃 처리 등 구현 가능
-        // 로그아웃으로 세션 무효화 => 이후 next-auth pages 설정에 따라 리다이렉트됨
-        await signOut({ redirect: true, callbackUrl: "/login?error=RefreshTokenFailed" });
-        console.error("Token refresh failed:", refreshError);
+        console.error(`${originalRequest._retry}th Failed:`, refreshError);
         return Promise.reject(refreshError);
       }
     }

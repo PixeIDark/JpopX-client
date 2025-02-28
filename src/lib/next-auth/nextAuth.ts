@@ -1,7 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { authApi } from "@/api/auth";
-import axios from "axios";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -36,6 +35,7 @@ export const authOptions: NextAuthOptions = {
       },
     }),
     CredentialsProvider({
+      id: "Refresh",
       name: "Refresh",
       credentials: {
         refreshToken: { label: "RefreshToken", type: "refresh_token" },
@@ -46,16 +46,16 @@ export const authOptions: NextAuthOptions = {
           if (!credentials?.accessToken || !credentials?.refreshToken) return null;
 
           const { accessToken, refreshToken } = credentials;
-          const { data } = await axios.get<MeResponse>(
-            `${process.env.NEXT_PUBLIC_API_URL}users/me`,
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-          );
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
+
+          const data = await response.json();
 
           return {
             accessToken,
@@ -70,6 +70,23 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+  events: {
+    async signOut({ token }) {
+      if (token?.accessToken) {
+        try {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token.accessToken}`,
+            },
+          });
+        } catch (error) {
+          console.error("Server Logout Failed:", error);
+        }
+      }
+    },
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {

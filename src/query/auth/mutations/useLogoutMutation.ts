@@ -1,12 +1,12 @@
 import { useMutation } from "@tanstack/react-query";
-import { authApi } from "@/api/auth";
 import { useToast } from "@/components/ui/Toast/useToast";
+import { signOut } from "next-auth/react";
 
 export function useLogoutMutation() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: () => authApi.logout(),
+    mutationFn: () => signOut({ redirect: true, callbackUrl: "/login" }),
     onSuccess: () => {
       toast({
         title: "Logout Success",
