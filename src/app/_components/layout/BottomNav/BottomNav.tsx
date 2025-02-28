@@ -2,6 +2,8 @@
 
 import Home from "@/assets/icons/home/home.svg";
 import HomeFill from "@/assets/icons/home/home_fill.svg";
+import Search from "@/assets/icons/search/search.svg";
+import SearchFill from "@/assets/icons/search/search_fill.svg";
 import BottomNavItem from "@/app/_components/layout/BottomNav/BottomNavItem";
 import { useSelectedLayoutSegment } from "next/navigation";
 
@@ -15,6 +17,12 @@ function BottomNav() {
       label: "home",
       Icon: Home,
       IconFill: HomeFill,
+    },
+    {
+      path: "/search",
+      label: "search",
+      Icon: Search,
+      IconFill: SearchFill,
     },
   ];
 

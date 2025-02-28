@@ -3,9 +3,9 @@
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import { useToast } from "@/components/ui/Toast/useToast";
-import FuckAccessToken from "@/app/_components/FuckAccessToken";
-import GetMe from "@/app/_components/GetMe";
-import LogoutMe from "@/app/_components/LogoutMe";
+import FuckAccessToken from "@/app/_components/test/FuckAccessToken";
+import GetMe from "@/app/_components/test/GetMe";
+import LogoutMe from "@/app/_components/test/LogoutMe";
 
 function HomePage() {
   const { toast } = useToast();
@@ -27,7 +27,10 @@ function HomePage() {
         active
       </Button>
       <Button variant="error" asChild>
-        <Link href="/login">go to page</Link>
+        <Link href="/search">go to page Search</Link>
+      </Button>
+      <Button variant="link" asChild>
+        <Link href="/login">go to page Login</Link>
       </Button>
       <FuckAccessToken />
       <GetMe />
