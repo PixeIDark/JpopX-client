@@ -1,10 +1,15 @@
+export type SearchType = "both" | "artist" | "title" | "lyrics";
+export type Sort = "latest" | "popular";
+
 export interface SearchRequest {
-  text?: string;
-  searchType?: "both" | "artist" | "title" | "lyrics";
-  sort?: "latest" | "popular";
+  text: string;
+  searchType?: SearchType;
+  sort?: Sort;
   limit?: number;
   page?: number;
 }
+
+export type SearchPanelParams = Omit<SearchRequest, "limit" | "page">;
 
 export interface SearchResponse {
   items: {
