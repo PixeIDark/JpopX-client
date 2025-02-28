@@ -25,6 +25,7 @@ export const authOptions: NextAuthOptions = {
               id: user.id,
               email: user.email,
               name: user.name,
+              profile_image_url: user.profile_image_url,
             };
           }
 
@@ -63,6 +64,7 @@ export const authOptions: NextAuthOptions = {
             id: data.id,
             email: data.email,
             name: data.name,
+            profile_image_url: data.profile_image_url,
           };
         } catch (error) {
           return null;
@@ -95,6 +97,7 @@ export const authOptions: NextAuthOptions = {
         token.id = Number(user.id);
         token.name = user.name;
         token.email = user.email;
+        token.profile_image_url = user.profile_image_url;
       }
       return token;
     },
