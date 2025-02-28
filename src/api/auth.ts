@@ -4,7 +4,6 @@ import {
   AccountResponse,
   LoginRequest,
   LoginResponse,
-  LogoutResponse,
   RefreshRequest,
 } from "@/types/auth.type";
 
@@ -13,8 +12,19 @@ const url = "auth";
 export const authApi = {
   account: (data: AccountRequest) => axiosInstance.post<AccountResponse>(`${url}/signup`, data),
   login: (data: LoginRequest) => axiosInstance.post<LoginResponse>(`${url}/login`, data),
-  logout: (refreshToken: RefreshRequest) =>
-    axiosInstance.post<LogoutResponse>(`${url}/logout`, { refreshToken }),
+  logout: async (accessToken: string) => {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+    } catch (error) {
+      console.error("Server Logout Failed:", error);
+    }
+  },
   refresh: async (refreshToken: RefreshRequest) => {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {
       method: "POST",

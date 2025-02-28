@@ -74,19 +74,7 @@ export const authOptions: NextAuthOptions = {
   ],
   events: {
     async signOut({ token }) {
-      if (token?.accessToken) {
-        try {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token.accessToken}`,
-            },
-          });
-        } catch (error) {
-          console.error("Server Logout Failed:", error);
-        }
-      }
+      if (token?.accessToken) await authApi.logout(token.accessToken);
     },
   },
   callbacks: {
