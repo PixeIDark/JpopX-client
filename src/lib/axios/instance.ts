@@ -32,6 +32,8 @@ axiosInstance.interceptors.request.use(
   }
 );
 
+const MAX_RETRIES = 3;
+
 axiosInstance.interceptors.response.use(
   function (response) {
     return response;
@@ -39,7 +41,7 @@ axiosInstance.interceptors.response.use(
   async function (error) {
     const originalRequest = error.config;
 
-    if (originalRequest._retry === 3) {
+    if (originalRequest._retry >= MAX_RETRIES) {
       await signOut({ redirect: true, callbackUrl: "/login" });
       return Promise.reject(error);
     }

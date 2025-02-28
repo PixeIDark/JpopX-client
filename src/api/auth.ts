@@ -26,7 +26,7 @@ export const authApi = {
     }
   },
   refresh: async (refreshToken: RefreshRequest) => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/${url}/refresh`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
