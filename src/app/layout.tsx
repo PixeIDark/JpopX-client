@@ -48,9 +48,13 @@ async function RootLayout({
         <SessionProvider session={session}>
           <QueryProvider>
             <ToastProvider maxToasts={5}>
-              <TopNav />
-              {children}
-              <BottomNav />
+              <div className="container mx-auto flex h-screen flex-col">
+                <TopNav />
+                <main className="overflow-y-auto">
+                  <div className="h-full px-4">{children}</div>
+                </main>
+                <BottomNav />
+              </div>
             </ToastProvider>
           </QueryProvider>
         </SessionProvider>
