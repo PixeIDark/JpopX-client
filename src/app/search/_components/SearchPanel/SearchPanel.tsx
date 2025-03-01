@@ -6,14 +6,19 @@ import { SearchPanelParams } from "@/types/search.type";
 import SearchSort from "@/app/search/_components/SearchPanel/SearchSort/SearchSort";
 import { useRouter } from "next/navigation";
 
-function SearchPanel() {
+interface SearchPanelProps {
+  params: SearchPanelParams;
+}
+
+function SearchPanel({ params }: SearchPanelProps) {
   const router = useRouter();
+  const { text, searchType, sort } = params;
 
   const onApplySearchParams = (params: SearchPanelParams) => {
     const searchParams = new URLSearchParams([
-      ["text", params.text || ""],
-      ["searchType", params.searchType || "both"],
-      ["sort", params.sort || "popular"],
+      ["text", params.text || text || ""],
+      ["searchType", params.searchType || searchType || "both"],
+      ["sort", params.sort || sort || "popular"],
     ]);
     router.push(`/search?${searchParams}`);
   };
