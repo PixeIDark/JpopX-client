@@ -8,6 +8,8 @@
     --color-text-h: #0D121C;
     --color-text-p: #4F6696;
     --color-text-white: #FFFFFF;
+    --color-text-ky: #FF4A01;
+    --color-text-tj: #7B6CD9;
     --color-body-default: #F7FAFC;
     --color-input-input: #E8EBF2;
     --color-button-outline: transparent;
@@ -25,6 +27,8 @@
     --color-text-h: #FFFFFF;
     --color-text-p: #94A6C7;
     --color-text-white: #FFFFFF;
+    --color-text-ky: #FF4A01;
+    --color-text-tj: #7B6CD9;
     --color-body-default: #121721;
     --color-input-input: #243047;
     --color-button-outline: transparent;
@@ -39,7 +43,6 @@
 }
 
 body {
-    padding: 0 16px;
     color: var(--color-text-h);
     background: var(--color-body-default);
     font-family: Pretendard Variable, system-ui, sans-serif;
