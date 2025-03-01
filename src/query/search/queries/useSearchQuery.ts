@@ -1,14 +1,11 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { getSearchQueryKey } from "@/query/search/key";
 import { searchApi } from "@/api/search";
+import { SearchPanelParams } from "@/types/search.type";
 
-export function useSearchQuery(params: {
-  text: string;
-  searchType?: "both" | "artist" | "title" | "lyrics";
-  sort?: "latest" | "popular";
-  limit?: number;
-}) {
-  const { text, searchType, sort, limit = 20 } = params;
+export function useSearchQuery(params: SearchPanelParams) {
+  const { text, searchType, sort } = params;
+  const limit = 10; // 한 번에 로드할 항목 수를 줄여 더 빠른 응답 및 UX 개선
 
   return useInfiniteQuery({
     queryKey: getSearchQueryKey(params),
@@ -27,6 +24,7 @@ export function useSearchQuery(params: {
 
       return loadedItems < total ? page + 1 : undefined;
     },
-    enabled: text.length > 0,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 }
