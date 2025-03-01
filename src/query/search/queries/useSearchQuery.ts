@@ -3,9 +3,11 @@ import { getSearchQueryKey } from "@/query/search/key";
 import { searchApi } from "@/api/search";
 import { SearchPanelParams } from "@/types/search.type";
 
-export function useSearchQuery(params: SearchPanelParams) {
+export type SearchQueryParams = SearchPanelParams & { text: string };
+
+export function useSearchQuery(params: SearchQueryParams) {
   const { text, searchType, sort } = params;
-  const limit = 10; // 한 번에 로드할 항목 수를 줄여 더 빠른 응답 및 UX 개선
+  const limit = 10;
 
   return useInfiniteQuery({
     queryKey: getSearchQueryKey(params),
@@ -19,11 +21,12 @@ export function useSearchQuery(params: SearchPanelParams) {
       }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
-      const { items, total, page, limit } = lastPage.data;
+      const { total, page, limit } = lastPage.data;
       const loadedItems = page * limit;
 
       return loadedItems < total ? page + 1 : undefined;
     },
+    enabled: text?.length > 0,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
   });

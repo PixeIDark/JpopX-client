@@ -13,7 +13,7 @@
     --color-body-default: #F7FAFC;
     --color-input-input: #E8EBF2;
     --color-button-outline: transparent;
-    --color-button-link: transparent;
+    --color-button-link: #F7FAFC;
     --color-button-ghost: #E8EBF2;
     --color-button-active: #1A5CE5;
     --color-button-error: #FF4D4D;
@@ -32,7 +32,7 @@
     --color-body-default: #121721;
     --color-input-input: #243047;
     --color-button-outline: transparent;
-    --color-button-link: transparent;
+    --color-button-link: #121721;
     --color-button-ghost: #243047;
     --color-button-active: #1A5CE5;
     --color-button-error: #FF4D4D;
@@ -40,6 +40,14 @@
     --color-icon-stroke: #94A6C7;
     --color-icon-bg: #FFFFFF;
     --color-solid-default: #334566;
+}
+
+.button-hover:hover {
+    @apply brightness-75;
+}
+
+[data-theme="dark"] .button-hover:hover {
+    @apply brightness-150;
 }
 
 body {

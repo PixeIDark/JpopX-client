@@ -4,30 +4,23 @@ import SearchInput from "@/app/search/_components/SearchPanel/SearchInput";
 import SearchFilter from "@/app/search/_components/SearchPanel/SearchFilter";
 import { SearchPanelParams } from "@/types/search.type";
 import SearchSort from "@/app/search/_components/SearchPanel/SearchSort/SearchSort";
-import { useRouter } from "next/navigation";
+import { useChangeUrl } from "@/app/search/_components/SearchPanel/_hooks/useChangeUrl";
 
 interface SearchPanelProps {
   params: SearchPanelParams;
 }
 
 function SearchPanel({ params }: SearchPanelProps) {
-  const router = useRouter();
-  const { text, searchType, sort } = params;
-
-  const onApplySearchParams = (params: SearchPanelParams) => {
-    const searchParams = new URLSearchParams([
-      ["text", params.text || text || ""],
-      ["searchType", params.searchType || searchType || "both"],
-      ["sort", params.sort || sort || "popular"],
-    ]);
-    router.push(`/search?${searchParams}`);
-  };
+  const { onApplySearchParams, searchType, text, sort } = useChangeUrl(params);
 
   return (
     <div className="mt-3 flex flex-col gap-3">
-      <SearchInput handleApplyParams={onApplySearchParams} />
-      <SearchFilter handleApplyParams={onApplySearchParams} />
-      <SearchSort handleApplyParams={onApplySearchParams} />
+      <SearchInput handleApplyParams={onApplySearchParams} initialText={text || ""} />
+      <SearchFilter
+        handleApplyParams={onApplySearchParams}
+        initialSearchType={searchType || "both"}
+      />
+      <SearchSort handleApplyParams={onApplySearchParams} initialSort={sort || "popular"} />
     </div>
   );
 }

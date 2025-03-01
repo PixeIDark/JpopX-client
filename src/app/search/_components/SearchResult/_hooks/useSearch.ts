@@ -1,9 +1,8 @@
 import { useCallback, useMemo, useRef } from "react";
-import { SearchPanelParams } from "@/types/search.type";
-import { useSearchQuery } from "@/query/search/queries/useSearchQuery";
+import { SearchQueryParams, useSearchQuery } from "@/query/search/queries/useSearchQuery";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 
-export function useSearch(params: SearchPanelParams) {
+export function useSearch(params: SearchQueryParams) {
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, error } =
@@ -22,11 +21,13 @@ export function useSearch(params: SearchPanelParams) {
     rootMargin: "20%",
   });
 
+  const searchTotal = data?.pages[0].data.total || 0;
   const songs = useMemo(() => {
     return data?.pages.flatMap((page) => page.data.items) || [];
   }, [data]);
 
   return {
+    searchTotal,
     songs,
     isLoading,
     isError,

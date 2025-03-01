@@ -1,16 +1,18 @@
 "use client";
 
 import Input from "@/components/ui/Input";
-import React, { FormEvent, useRef } from "react";
+import React, { FormEvent } from "react";
 import { SearchPanelParams } from "@/types/search.type";
+import { useSyncInputValue } from "@/app/search/_components/SearchPanel/SearchInput/_hooks/useSyncInputValue";
 
 interface SearchInputProps {
   handleApplyParams: (params: SearchPanelParams) => void;
+  initialText: string;
 }
 
-function SearchInput({ handleApplyParams }: SearchInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
+function SearchInput({ handleApplyParams, initialText }: SearchInputProps) {
+  const inputRef = useSyncInputValue(initialText);
+  
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const text = inputRef.current?.value.trim() || "";
@@ -18,8 +20,13 @@ function SearchInput({ handleApplyParams }: SearchInputProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Input placeholder="서치인풋" ref={inputRef} type="text" />
+    <form onSubmit={handleSubmit} className="w-full">
+      <Input
+        placeholder="검색어를 입력하세요"
+        ref={inputRef}
+        type="text"
+        defaultValue={initialText}
+      />
     </form>
   );
 }
