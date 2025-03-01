@@ -21,7 +21,7 @@ function TopNav() {
   const title = pathname in NAV_TITLE ? NAV_TITLE[pathname as NavPath] : "Unknown Page";
 
   return (
-    <div className="pt sticky top-0 -mx-4 flex items-center justify-between border-b border-solid-default bg-body-default px-4 pb-3 pt-5">
+    <div className="pt sticky top-0 flex items-center justify-between border-b border-solid-default bg-body-default px-4 pb-3 pt-5">
       <button onClick={() => router.back()} className="p-2">
         <ArrowLeft size={24} strokeWidth={1.5} />
       </button>

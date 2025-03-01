@@ -27,16 +27,19 @@ function BottomNav() {
   ];
 
   return (
-    <div className="pt fixed bottom-0 -mx-4 flex w-full items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
-      {navItems.map((item) => (
-        <BottomNavItem
-          key={item.path}
-          path={item.path}
-          label={item.label}
-          Icon={item.Icon}
-          IconFill={item.IconFill}
-        />
-      ))}
+    <div>
+      <div className="pt fixed bottom-0 flex w-full items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
+        {navItems.map((item) => (
+          <BottomNavItem
+            key={item.path}
+            path={item.path}
+            label={item.label}
+            Icon={item.Icon}
+            IconFill={item.IconFill}
+          />
+        ))}
+      </div>
+      <div className="h-[77px] w-full" />
     </div>
   );
 }
