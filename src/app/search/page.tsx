@@ -9,7 +9,7 @@ async function SearchPage({ searchParams }: { searchParams: Promise<SearchPanelP
 
   return (
     <div>
-      <SearchPanel />
+      <SearchPanel params={params} />
       <SearchResult params={params} />
     </div>
   );
