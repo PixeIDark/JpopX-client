@@ -27,7 +27,5 @@ export function useSearchQuery(params: SearchQueryParams) {
       return loadedItems < total ? page + 1 : undefined;
     },
     enabled: text?.length > 0,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
   });
 }
