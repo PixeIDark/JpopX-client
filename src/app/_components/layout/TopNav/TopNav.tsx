@@ -3,7 +3,7 @@
 import { ArrowLeft } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import ThemeToggle from "@/components/common/ThemeToggle";
+import ThemeToggle from "@/app/_components/layout/TopNav/ThemeToggle";
 
 const NAV_TITLE = {
   "/": "Home",
