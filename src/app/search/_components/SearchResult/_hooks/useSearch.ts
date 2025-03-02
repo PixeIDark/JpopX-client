@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { SearchQueryParams, useSearchQuery } from "@/query/search/queries/useSearchQuery";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 
@@ -22,9 +22,7 @@ export function useSearch(params: SearchQueryParams) {
   });
 
   const searchTotal = data?.pages[0].data.total || 0;
-  const songs = useMemo(() => {
-    return data?.pages.flatMap((page) => page.data.items) || [];
-  }, [data]);
+  const songs = data?.pages.flatMap((page) => page.data.items) || [];
 
   return {
     searchTotal,
