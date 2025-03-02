@@ -7,29 +7,29 @@ import SearchFill from "@/assets/icons/search/search_fill.svg";
 import BottomNavItem from "@/app/_components/layout/BottomNav/BottomNavItem";
 import { useSelectedLayoutSegment } from "next/navigation";
 
+const NAV_ITEMS = [
+  {
+    path: "/",
+    label: "home",
+    Icon: Home,
+    IconFill: HomeFill,
+  },
+  {
+    path: "/search",
+    label: "search",
+    Icon: Search,
+    IconFill: SearchFill,
+  },
+];
+
 function BottomNav() {
   const segment = useSelectedLayoutSegment();
   if (segment === "(auth)") return null;
 
-  const navItems = [
-    {
-      path: "/",
-      label: "home",
-      Icon: Home,
-      IconFill: HomeFill,
-    },
-    {
-      path: "/search",
-      label: "search",
-      Icon: Search,
-      IconFill: SearchFill,
-    },
-  ];
-
   return (
     <div>
       <div className="pt fixed bottom-0 flex w-full items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
-        {navItems.map((item) => (
+        {NAV_ITEMS.map((item) => (
           <BottomNavItem key={item.path} item={item} />
         ))}
       </div>
