@@ -9,6 +9,7 @@ import TopNav from "@/app/_components/layout/TopNav";
 import BottomNav from "@/app/_components/layout/BottomNav";
 import { authOptions } from "@/lib/next-auth/nextAuth";
 import ToastProvider from "@/components/ui/Toast/ToastContext";
+import { ScrollPositionProvider } from "@/app/_providers/ScrollPositionProvider";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -48,13 +49,13 @@ async function RootLayout({
         <SessionProvider session={session}>
           <QueryProvider>
             <ToastProvider maxToasts={5}>
-              <div className="flex h-screen flex-col">
-                <TopNav />
-                <main className="overflow-y-auto">
-                  <div className="h-full px-4">{children}</div>
-                </main>
-                <BottomNav />
-              </div>
+              <ScrollPositionProvider>
+                <div className="flex h-screen flex-col">
+                  <TopNav />
+                  <main className="overflow-y-auto px-4">{children}</main>
+                  <BottomNav />
+                </div>
+              </ScrollPositionProvider>
             </ToastProvider>
           </QueryProvider>
         </SessionProvider>
