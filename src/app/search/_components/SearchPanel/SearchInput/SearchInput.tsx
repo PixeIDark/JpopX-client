@@ -13,7 +13,7 @@ function SearchInput({ initialText }: SearchInputProps) {
   return (
     <form onSubmit={handleSubmit} className="w-full">
       <Input
-        placeholder="검색어를 입력하세요"
+        placeholder="Please Enter Something"
         ref={inputRef}
         type="text"
         defaultValue={initialText}
