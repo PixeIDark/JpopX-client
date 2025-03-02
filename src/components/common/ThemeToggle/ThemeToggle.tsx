@@ -1,29 +1,40 @@
 "use client";
 
-import { useTheme } from "@/components/common/ThemeToggle/_hooks/useTheme";
-import { MdLightMode, MdOutlineNightlightRound } from "react-icons/md";
-import { useMounted } from "@/hooks/useMounted";
+import { ArrowLeft } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import ThemeToggle from "./ThemeToggle";
 
-function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
-  const { mounted } = useMounted();
+const NAV_TITLE = {
+  "/": "Home",
+  "/login": "Login",
+  "/account": "Account",
+  "/search": "Search",
+} as const;
+
+type NavPath = keyof typeof NAV_TITLE;
+
+interface TopNavProps {
+  currentTheme: "light" | "dark";
+}
+
+function TopNav({ currentTheme }: TopNavProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const title = pathname in NAV_TITLE ? NAV_TITLE[pathname as NavPath] : "Unknown Page";
 
   return (
-    <button
-      onClick={toggleTheme}
-      className="relative h-10 max-h-10 w-10 rounded-md p-2 hover:bg-button-ghost"
-      aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-    >
-      {theme === "light" && <MdOutlineNightlightRound size={24} color="black" />}
-      {(theme !== "light" || !mounted) && (
-        <MdLightMode
-          size={24}
-          color="white"
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-        />
-      )}
-    </button>
+    <div className="pt sticky top-0 flex items-center justify-between border-b border-solid-default bg-body-default px-4 pb-3 pt-5">
+      <button onClick={() => router.back()} className="p-2">
+        <ArrowLeft size={24} strokeWidth={1.5} />
+      </button>
+      <Link href="/">
+        <h1 className="text-lg font-semibold text-text-h">{title}</h1>
+      </Link>
+      <ThemeToggle currentTheme={currentTheme} />
+    </div>
   );
 }
 
-export default ThemeToggle;
+export default TopNav;
