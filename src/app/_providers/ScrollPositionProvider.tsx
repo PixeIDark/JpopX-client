@@ -27,7 +27,6 @@ export function ScrollPositionProvider({ children }: { children: React.ReactNode
         if (scrollValue > 0) {
           const scrollKey = `scroll_${window.location.href}`;
           sessionStorage.setItem(scrollKey, scrollValue.toString());
-          console.log("스크롤 위치 저장:", scrollKey, scrollValue);
         }
 
         previousUrlRef.current = window.location.href;
@@ -41,7 +40,6 @@ export function ScrollPositionProvider({ children }: { children: React.ReactNode
         if (scrollValue > 0) {
           const scrollKey = `scroll_${previousUrlRef.current}`;
           sessionStorage.setItem(scrollKey, scrollValue.toString());
-          console.log("이전 URL에 스크롤 위치 저장:", scrollKey, scrollValue);
         }
 
         previousUrlRef.current = window.location.href;
@@ -53,12 +51,10 @@ export function ScrollPositionProvider({ children }: { children: React.ReactNode
 
     document.addEventListener("click", updateScrollInUrl, { passive: true });
     window.addEventListener("popstate", handlePopState);
-    window.addEventListener("beforeunload", updateScrollInUrl);
 
     return () => {
       document.removeEventListener("click", updateScrollInUrl);
       window.removeEventListener("popstate", handlePopState);
-      window.removeEventListener("beforeunload", updateScrollInUrl);
     };
   }, [loadScroll]);
 
