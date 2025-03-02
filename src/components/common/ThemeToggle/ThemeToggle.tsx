@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import { MdLightMode, MdOutlineNightlightRound } from "react-icons/md";
 import { setTheme } from "@/utils/theme";
 
-type Props = {
+interface ThemeToggleProps {
   currentTheme: "light" | "dark";
-};
+}
 
-function ThemeToggle({ currentTheme }: Props) {
+function ThemeToggle({ currentTheme }: ThemeToggleProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
