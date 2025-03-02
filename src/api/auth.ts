@@ -5,6 +5,7 @@ import {
   LoginRequest,
   LoginResponse,
   RefreshRequest,
+  RefreshResponse,
 } from "@/types/auth.type";
 
 const url = "auth";
@@ -25,7 +26,7 @@ export const authApi = {
       console.error("Server Logout Failed:", error);
     }
   },
-  refresh: async (refreshToken: RefreshRequest) => {
+  refresh: async (refreshToken: RefreshRequest): Promise<RefreshResponse> => {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/${url}/refresh`, {
       method: "POST",
       headers: {
