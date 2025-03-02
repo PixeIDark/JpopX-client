@@ -19,7 +19,7 @@ function HomePage() {
   };
 
   return (
-    <div>
+    <div className="flex flex-col gap-2">
       <Button>outline</Button>
       <Button variant="link">link</Button>
       <Button variant="ghost">ghost</Button>

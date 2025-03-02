@@ -1,6 +1,7 @@
 src
 ├── api
 │   ├── auth.ts
+│   ├── search.ts
 │   └── users.ts
 ├── app
 │   ├── (auth)
@@ -17,17 +18,20 @@ src
 │   │       │       └── index.ts
 │   │       └── page.tsx
 │   ├── _components
-│   │   ├── ThemeToggle.tsx
-│   │   └── layout
-│   │       ├── BottomNav
-│   │       │   ├── BottomNav.tsx
-│   │       │   ├── BottomNavItem
-│   │       │   │   ├── BottomNavItem.tsx
-│   │       │   │   └── index.ts
-│   │       │   └── index.ts
-│   │       └── TopNav
-│   │           ├── TopNav.tsx
-│   │           └── index.ts
+│   │   ├── layout
+│   │   │   ├── BottomNav
+│   │   │   │   ├── BottomNav.tsx
+│   │   │   │   ├── BottomNavItem
+│   │   │   │   │   ├── BottomNavItem.tsx
+│   │   │   │   │   └── index.ts
+│   │   │   │   └── index.ts
+│   │   │   └── TopNav
+│   │   │       ├── TopNav.tsx
+│   │   │       └── index.ts
+│   │   └── test
+│   │       ├── FuckAccessToken.tsx
+│   │       ├── GetMe.tsx
+│   │       └── LogoutMe.tsx
 │   ├── _providers
 │   │   ├── QueryProvider.tsx
 │   │   └── SessionProvider.tsx
@@ -38,7 +42,37 @@ src
 │   ├── favicon.ico
 │   ├── globals.css
 │   ├── layout.tsx
-│   └── page.tsx
+│   ├── page.tsx
+│   └── search
+│       ├── _components
+│       │   ├── SearchPanel
+│       │   │   ├── SearchFilter
+│       │   │   │   ├── SearchFilter.tsx
+│       │   │   │   └── index.ts
+│       │   │   ├── SearchInput
+│       │   │   │   ├── SearchInput.tsx
+│       │   │   │   ├── _hooks
+│       │   │   │   │   └── useQueryInput.ts
+│       │   │   │   └── index.ts
+│       │   │   ├── SearchPanel.tsx
+│       │   │   ├── SearchSort
+│       │   │   │   ├── SearchSort.tsx
+│       │   │   │   └── index.ts
+│       │   │   ├── _hooks
+│       │   │   │   └── useChangeUrl.ts
+│       │   │   └── index.ts
+│       │   └── SearchResult
+│       │       ├── SearchList
+│       │       │   ├── SearchList.tsx
+│       │       │   └── index.ts
+│       │       ├── SearchLoading
+│       │       │   ├── SearchLoading.tsx
+│       │       │   └── index.ts
+│       │       ├── SearchResult.tsx
+│       │       ├── _hooks
+│       │       │   └── useSearch.ts
+│       │       └── index.ts
+│       └── page.tsx
 ├── assets
 │   └── icons
 │       ├── home
@@ -54,30 +88,51 @@ src
 │           └── search_fill.svg
 ├── components
 │   ├── common
-│   │   └── Field
-│   │       ├── ErrorMessage
-│   │       │   ├── ErrorMessage.tsx
-│   │       │   └── index.ts
-│   │       ├── PasswordField
-│   │       │   ├── EyeButton
-│   │       │   │   ├── EyeButton.tsx
-│   │       │   │   └── index.ts
-│   │       │   ├── PasswordField.tsx
-│   │       │   ├── hooks
-│   │       │   │   └── useInvisiblePassword.ts
-│   │       │   └── index.ts
-│   │       └── TextField
-│   │           ├── TextField.tsx
-│   │           └── index.ts
+│   │   ├── Field
+│   │   │   ├── ErrorMessage
+│   │   │   │   ├── ErrorMessage.tsx
+│   │   │   │   └── index.ts
+│   │   │   ├── PasswordField
+│   │   │   │   ├── EyeButton
+│   │   │   │   │   ├── EyeButton.tsx
+│   │   │   │   │   └── index.ts
+│   │   │   │   ├── PasswordField.tsx
+│   │   │   │   ├── hooks
+│   │   │   │   │   └── useInvisiblePassword.ts
+│   │   │   │   └── index.ts
+│   │   │   └── TextField
+│   │   │       ├── TextField.tsx
+│   │   │       └── index.ts
+│   │   ├── LoadingSpinner
+│   │   │   ├── LoadingSpinner.tsx
+│   │   │   └── index.ts
+│   │   ├── NotFound
+│   │   │   ├── NotFound.tsx
+│   │   │   └── index.ts
+│   │   ├── SongCard
+│   │   │   ├── SongCard.tsx
+│   │   │   └── index.ts
+│   │   └── ThemeToggle
+│   │       ├── ThemeToggle.tsx
+│   │       ├── _hooks
+│   │       │   └── useTheme.ts
+│   │       └── index.ts
 │   └── ui
 │       ├── Button
 │       │   ├── Button.tsx
 │       │   └── index.ts
-│       └── Input
-│           ├── Input.tsx
-│           └── index.ts
+│       ├── Input
+│       │   ├── Input.tsx
+│       │   └── index.ts
+│       └── Toast
+│           ├── Toast.tsx
+│           ├── ToastContainer.tsx
+│           ├── ToastContext.tsx
+│           └── useToast.ts
 ├── hooks
-│   └── useTheme.ts
+│   ├── useIntersectionObserver.ts
+│   ├── useMounted.ts
+│   └── useScrollRestoration.ts
 ├── lib
 │   ├── axios
 │   │   └── instance.ts
@@ -86,10 +141,22 @@ src
 │   │   └── nextAuth.type.d.ts
 │   └── zod
 │       └── auth.ts
+├── query
+│   ├── auth
+│   │   └── mutations
+│   │       ├── useAccountMutation.ts
+│   │       ├── useLoginMutation.ts
+│   │       └── useLogoutMutation.ts
+│   └── search
+│       ├── key.ts
+│       └── queries
+│           └── useSearchQuery.ts
 ├── types
 │   ├── auth.type.ts
+│   ├── search.type.ts
 │   └── users.type.ts
 └── utils
-    └── applyTheme.ts
+    ├── applyTheme.ts
+    └── getIsomorphicSession.ts
 
-43 directories, 50 files
+67 directories, 93 files

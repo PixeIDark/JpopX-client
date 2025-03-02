@@ -13,15 +13,22 @@ module.exports = {
           "0%": { opacity: "0", transform: "translateX(20px)" },
           "100%": { opacity: "1", transform: "translateX(0)" },
         },
+        rotate: {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
       },
       animation: {
         fadeIn: "fadeIn 0.3s ease-out forwards",
+        rotate: "rotate 2s linear infinite",
       },
       colors: {
         text: {
           h: "var(--color-text-h)",
           p: "var(--color-text-p)",
           white: "var(--color-text-white)",
+          ky: "var(--color-text-ky)",
+          tj: "var(--color-text-tj)",
         },
         body: {
           default: "var(--color-body-default)",

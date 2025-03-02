@@ -11,18 +11,18 @@ interface BottomNavItemProps {
   IconFill: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
 
-function BottomNavItem({ path, label, Icon, IconFill }: BottomNavItemProps) {
+function BottomNavItem({ item }: { item: BottomNavItemProps }) {
   const pathname = usePathname();
 
-  const isActive = path === pathname;
+  const isActive = item.path === pathname;
   return (
-    <Link href={path} className="flex w-16 flex-col items-center justify-center gap-1">
+    <Link href={item.path} className="flex w-16 flex-col items-center justify-center gap-1">
       {isActive ? (
-        <IconFill width={24} height={24} className="fill-icon-bg" />
+        <item.IconFill width={24} height={24} className="fill-icon-bg" />
       ) : (
-        <Icon width={24} height={24} className="fill-icon-stroke" />
+        <item.Icon width={24} height={24} className="fill-icon-stroke" />
       )}
-      <p className="text-xs text-text-p">{label}</p>
+      <p className="text-xs text-text-p">{item.label}</p>
     </Link>
   );
 }
