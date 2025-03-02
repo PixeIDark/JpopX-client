@@ -1,31 +1,25 @@
 import Button from "@/components/ui/Button";
-import React, { useState } from "react";
-import { SearchPanelParams, SearchType } from "@/types/search.type";
+import React from "react";
+import { SearchType } from "@/types/search.type";
+import { useQueryParamState } from "@/hooks/useQueryParamState";
 
 interface SearchFilterProps {
-  handleApplyParams: (params: SearchPanelParams) => void;
   initialSearchType: SearchType;
 }
 
 const SEARCH_TYPES = ["both", "title", "artist"] as const;
 
-function SearchFilter({ handleApplyParams, initialSearchType }: SearchFilterProps) {
-  const [choiceType, setChoiceType] = useState(initialSearchType);
-
-  const handleApplyType = (e: React.MouseEvent<HTMLButtonElement>): void => {
-    const searchType = e.currentTarget.value as SearchType;
-    setChoiceType(searchType);
-    handleApplyParams({ searchType });
-  };
+function SearchFilter({ initialSearchType }: SearchFilterProps) {
+  const { choiceParam, applyQueryParams } = useQueryParamState(initialSearchType, "search");
 
   return (
     <div className="flex gap-3">
       {SEARCH_TYPES.map((type, idx) => (
         <Button
           key={idx}
-          variant={choiceType === type ? "outline" : "ghost"}
+          variant={choiceParam === type ? "outline" : "ghost"}
           value={type}
-          onClick={handleApplyType}
+          onClick={applyQueryParams}
           className="h-11 max-w-[70px] text-sm"
         >
           {type}

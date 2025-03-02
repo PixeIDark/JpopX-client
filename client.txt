@@ -538,7 +538,7 @@ export default SearchFilter;
 export { default } from "./SearchFilter";
 
 
---- src/app/search/_components/SearchPanel/SearchInput/_hooks/useSyncInputValue.ts ---
+--- src/app/search/_components/SearchPanel/SearchInput/_hooks/useQueryInput.ts ---
 import { useEffect, useRef } from "react";
 
 export function useSyncInputValue(initialValue: string) {

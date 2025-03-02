@@ -52,7 +52,7 @@ src
 │       │   │   ├── SearchInput
 │       │   │   │   ├── SearchInput.tsx
 │       │   │   │   ├── _hooks
-│       │   │   │   │   └── useSyncInputValue.ts
+│       │   │   │   │   └── useQueryInput.ts
 │       │   │   │   └── index.ts
 │       │   │   ├── SearchPanel.tsx
 │       │   │   ├── SearchSort
