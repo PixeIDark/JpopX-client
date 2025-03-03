@@ -6,6 +6,7 @@ import {
   LoginRequest,
   LoginResponse,
   RefreshRequest,
+  RefreshResponse,
 } from "@/types/auth.type";
 
 const url = "auth";
@@ -26,7 +27,7 @@ export const authApi = {
       console.error("Server Logout Failed:", error);
     }
   },
-  refresh: async (refreshToken: RefreshRequest) => {
+  refresh: async (refreshToken: RefreshRequest): Promise<RefreshResponse> => {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/${url}/refresh`, {
       method: "POST",
       headers: {
@@ -246,18 +247,18 @@ interface BottomNavItemProps {
   IconFill: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
 
-function BottomNavItem({ path, label, Icon, IconFill }: BottomNavItemProps) {
+function BottomNavItem({ item }: { item: BottomNavItemProps }) {
   const pathname = usePathname();
 
-  const isActive = path === pathname;
+  const isActive = item.path === pathname;
   return (
-    <Link href={path} className="flex w-16 flex-col items-center justify-center gap-1">
+    <Link href={item.path} className="flex w-16 flex-col items-center justify-center gap-1">
       {isActive ? (
-        <IconFill width={24} height={24} className="fill-icon-bg" />
+        <item.IconFill width={24} height={24} className="fill-icon-bg" />
       ) : (
-        <Icon width={24} height={24} className="fill-icon-stroke" />
+        <item.Icon width={24} height={24} className="fill-icon-stroke" />
       )}
-      <p className="text-xs text-text-p">{label}</p>
+      <p className="text-xs text-text-p">{item.label}</p>
     </Link>
   );
 }
@@ -279,36 +280,30 @@ import SearchFill from "@/assets/icons/search/search_fill.svg";
 import BottomNavItem from "@/app/_components/layout/BottomNav/BottomNavItem";
 import { useSelectedLayoutSegment } from "next/navigation";
 
+const NAV_ITEMS = [
+  {
+    path: "/",
+    label: "home",
+    Icon: Home,
+    IconFill: HomeFill,
+  },
+  {
+    path: "/search",
+    label: "search",
+    Icon: Search,
+    IconFill: SearchFill,
+  },
+] as const;
+
 function BottomNav() {
   const segment = useSelectedLayoutSegment();
   if (segment === "(auth)") return null;
 
-  const navItems = [
-    {
-      path: "/",
-      label: "home",
-      Icon: Home,
-      IconFill: HomeFill,
-    },
-    {
-      path: "/search",
-      label: "search",
-      Icon: Search,
-      IconFill: SearchFill,
-    },
-  ];
-
   return (
     <div>
       <div className="pt fixed bottom-0 flex w-full items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
-        {navItems.map((item) => (
-          <BottomNavItem
-            key={item.path}
-            path={item.path}
-            label={item.label}
-            Icon={item.Icon}
-            IconFill={item.IconFill}
-          />
+        {NAV_ITEMS.map((item) => (
+          <BottomNavItem key={item.path} item={item} />
         ))}
       </div>
       <div className="h-[77px] w-full" />
@@ -323,13 +318,62 @@ export default BottomNav;
 export { default } from "./BottomNav";
 
 
+--- src/app/_components/layout/TopNav/ThemeToggle/ThemeToggle.tsx ---
+"use client";
+
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { MdLightMode, MdOutlineNightlightRound } from "react-icons/md";
+import { setTheme } from "@/utils/theme";
+
+interface ThemeToggleProps {
+  currentTheme: "light" | "dark";
+}
+
+function ThemeToggle({ currentTheme }: ThemeToggleProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const toggleTheme = async () => {
+    const newTheme = currentTheme === "light" ? "dark" : "light";
+
+    await setTheme(newTheme);
+
+    startTransition(() => {
+      router.refresh();
+    });
+  };
+
+  return (
+    <button
+      onClick={toggleTheme}
+      disabled={isPending}
+      className="relative h-10 max-h-10 w-10 rounded-md p-2 hover:bg-button-ghost"
+      aria-label={`Switch to ${currentTheme === "light" ? "dark" : "light"} mode`}
+    >
+      {currentTheme === "light" ? (
+        <MdOutlineNightlightRound size={24} className="text-text-h" />
+      ) : (
+        <MdLightMode size={24} className="text-text-h" />
+      )}
+    </button>
+  );
+}
+
+export default ThemeToggle;
+
+
+--- src/app/_components/layout/TopNav/ThemeToggle/index.ts ---
+export { default } from "./ThemeToggle";
+
+
 --- src/app/_components/layout/TopNav/TopNav.tsx ---
 "use client";
 
 import { ArrowLeft } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import ThemeToggle from "@/components/common/ThemeToggle";
+import ThemeToggle from "@/app/_components/layout/TopNav/ThemeToggle";
 
 const NAV_TITLE = {
   "/": "Home",
@@ -340,7 +384,11 @@ const NAV_TITLE = {
 
 type NavPath = keyof typeof NAV_TITLE;
 
-function TopNav() {
+interface TopNavProps {
+  currentTheme: "light" | "dark";
+}
+
+function TopNav({ currentTheme }: TopNavProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -354,7 +402,7 @@ function TopNav() {
       <Link href="/">
         <h1 className="text-lg font-semibold text-text-h">{title}</h1>
       </Link>
-      <ThemeToggle />
+      <ThemeToggle currentTheme={currentTheme} />
     </div>
   );
 }
@@ -436,6 +484,8 @@ const makeQueryClient = () => {
       queries: {
         staleTime: 5 * 60 * 1000,
         gcTime: 10 * 60 * 1000,
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
       },
     },
   });
@@ -464,6 +514,71 @@ function QueryProvider({ children }: { children: React.ReactNode }) {
 }
 
 export default QueryProvider;
+
+
+--- src/app/_providers/ScrollPositionProvider.tsx ---
+"use client";
+
+import React, { useCallback, useEffect, useRef } from "react";
+
+export function ScrollPositionProvider({ children }: { children: React.ReactNode }) {
+  const mainRef = useRef<HTMLDivElement | null>(null);
+  const previousUrlRef = useRef<string>("");
+
+  const loadScroll = useCallback(() => {
+    if (!mainRef.current) return;
+
+    const scrollKey = `scroll_${window.location.href}`;
+    const scrollValue = sessionStorage.getItem(scrollKey);
+
+    if (scrollValue && Number(scrollValue) > 0) {
+      mainRef.current.scrollTop = Number(scrollValue);
+    }
+  }, []);
+
+  useEffect(() => {
+    const mainElement = document.querySelector("main.overflow-y-auto");
+    if (mainElement) mainRef.current = mainElement as HTMLDivElement;
+
+    const updateScrollInUrl = () => {
+      if (mainRef.current) {
+        const scrollValue = Math.round(mainRef.current.scrollTop);
+        if (scrollValue > 0) {
+          const scrollKey = `scroll_${window.location.href}`;
+          sessionStorage.setItem(scrollKey, scrollValue.toString());
+        }
+
+        previousUrlRef.current = window.location.href;
+      }
+      return true;
+    };
+
+    const handlePopState = () => {
+      if (mainRef.current) {
+        const scrollValue = Math.round(mainRef.current.scrollTop);
+        if (scrollValue > 0) {
+          const scrollKey = `scroll_${previousUrlRef.current}`;
+          sessionStorage.setItem(scrollKey, scrollValue.toString());
+        }
+
+        previousUrlRef.current = window.location.href;
+
+        setTimeout(loadScroll, 50);
+      }
+      return true;
+    };
+
+    document.addEventListener("click", updateScrollInUrl, { passive: true });
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      document.removeEventListener("click", updateScrollInUrl);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [loadScroll]);
+
+  return <>{children}</>;
+}
 
 
 --- src/app/_providers/SessionProvider.tsx ---
@@ -495,33 +610,27 @@ export { handler as GET, handler as POST };
 
 --- src/app/search/_components/SearchPanel/SearchFilter/SearchFilter.tsx ---
 import Button from "@/components/ui/Button";
-import React, { useState } from "react";
-import { SearchPanelParams, SearchType } from "@/types/search.type";
+import React from "react";
+import { SearchType } from "@/types/search.type";
+import { useQueryParamState } from "@/hooks/useQueryParamState";
 
 interface SearchFilterProps {
-  handleApplyParams: (params: SearchPanelParams) => void;
   initialSearchType: SearchType;
 }
 
 const SEARCH_TYPES = ["both", "title", "artist"] as const;
 
-function SearchFilter({ handleApplyParams, initialSearchType }: SearchFilterProps) {
-  const [choiceType, setChoiceType] = useState(initialSearchType);
-
-  const handleApplyType = (e: React.MouseEvent<HTMLButtonElement>): void => {
-    const searchType = e.currentTarget.value as SearchType;
-    setChoiceType(searchType);
-    handleApplyParams({ searchType });
-  };
+function SearchFilter({ initialSearchType }: SearchFilterProps) {
+  const { choiceParam, applyQueryParams } = useQueryParamState(initialSearchType, "search");
 
   return (
     <div className="flex gap-3">
       {SEARCH_TYPES.map((type, idx) => (
         <Button
           key={idx}
-          variant={choiceType === type ? "outline" : "ghost"}
+          variant={choiceParam === type ? "outline" : "ghost"}
           value={type}
-          onClick={handleApplyType}
+          onClick={applyQueryParams}
           className="h-11 max-w-[70px] text-sm"
         >
           {type}
@@ -538,48 +647,23 @@ export default SearchFilter;
 export { default } from "./SearchFilter";
 
 
---- src/app/search/_components/SearchPanel/SearchInput/_hooks/useQueryInput.ts ---
-import { useEffect, useRef } from "react";
-
-export function useSyncInputValue(initialValue: string) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (inputRef.current && initialValue) {
-      inputRef.current.value = initialValue;
-    }
-  }, [initialValue]);
-
-  return inputRef;
-}
-
-
 --- src/app/search/_components/SearchPanel/SearchInput/SearchInput.tsx ---
 "use client";
 
 import Input from "@/components/ui/Input";
-import React, { FormEvent } from "react";
-import { SearchPanelParams } from "@/types/search.type";
-import { useSyncInputValue } from "@/app/search/_components/SearchPanel/SearchInput/_hooks/useSyncInputValue";
+import { useQueryInput } from "@/hooks/useQueryInput";
 
 interface SearchInputProps {
-  handleApplyParams: (params: SearchPanelParams) => void;
   initialText: string;
 }
 
-function SearchInput({ handleApplyParams, initialText }: SearchInputProps) {
-  const inputRef = useSyncInputValue(initialText);
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    const text = inputRef.current?.value.trim() || "";
-    handleApplyParams({ text });
-  };
+function SearchInput({ initialText }: SearchInputProps) {
+  const { handleSubmit, inputRef } = useQueryInput(initialText, "text");
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
       <Input
-        placeholder="검색어를 입력하세요"
+        placeholder="Please Enter Something"
         ref={inputRef}
         type="text"
         defaultValue={initialText}
@@ -599,33 +683,27 @@ export { default } from "./SearchInput";
 "use client";
 
 import Button from "@/components/ui/Button";
-import { SearchPanelParams, Sort } from "@/types/search.type";
-import React, { useState } from "react";
+import { Sort } from "@/types/search.type";
+import React from "react";
+import { useQueryParamState } from "@/hooks/useQueryParamState";
 
 interface SearchSortProps {
-  handleApplyParams: (params: SearchPanelParams) => void;
   initialSort: Sort;
 }
 
 const SORT_TYPES = ["popular", "latest"] as const;
 
-function SearchSort({ handleApplyParams, initialSort }: SearchSortProps) {
-  const [choiceSort, setChoiceSort] = useState(initialSort);
-
-  const handleApplySort = (e: React.MouseEvent<HTMLButtonElement>) => {
-    const sort = e.currentTarget.value as Sort;
-    setChoiceSort(sort);
-    handleApplyParams({ sort });
-  };
+function SearchSort({ initialSort }: SearchSortProps) {
+  const { choiceParam, applyQueryParams } = useQueryParamState(initialSort, "search");
 
   return (
     <div className="flex rounded-xl bg-button-ghost p-1">
       {SORT_TYPES.map((sort, idx) => (
         <Button
           key={idx}
-          variant={choiceSort === sort ? "link" : "ghost"}
+          variant={choiceParam === sort ? "link" : "ghost"}
           value={sort}
-          onClick={handleApplySort}
+          onClick={applyQueryParams}
           className="h-8"
         >
           {sort}
@@ -641,27 +719,6 @@ export default SearchSort;
 --- src/app/search/_components/SearchPanel/SearchSort/index.ts ---
 
 
---- src/app/search/_components/SearchPanel/_hooks/useChangeUrl.ts ---
-import { SearchPanelParams } from "@/types/search.type";
-import { useRouter } from "next/navigation";
-
-export function useChangeUrl(params: SearchPanelParams) {
-  const router = useRouter();
-  const { text, searchType, sort } = params;
-
-  const onApplySearchParams = (params: SearchPanelParams) => {
-    const searchParams = new URLSearchParams([
-      ["text", params.text ?? text ?? ""],
-      ["searchType", params.searchType || searchType || "both"],
-      ["sort", params.sort || sort || "popular"],
-    ]);
-    router.push(`/search?${searchParams}`);
-  };
-
-  return { text, searchType, sort, onApplySearchParams };
-}
-
-
 --- src/app/search/_components/SearchPanel/SearchPanel.tsx ---
 "use client";
 
@@ -669,23 +726,19 @@ import SearchInput from "@/app/search/_components/SearchPanel/SearchInput";
 import SearchFilter from "@/app/search/_components/SearchPanel/SearchFilter";
 import { SearchPanelParams } from "@/types/search.type";
 import SearchSort from "@/app/search/_components/SearchPanel/SearchSort/SearchSort";
-import { useChangeUrl } from "@/app/search/_components/SearchPanel/_hooks/useChangeUrl";
 
 interface SearchPanelProps {
   params: SearchPanelParams;
 }
 
 function SearchPanel({ params }: SearchPanelProps) {
-  const { onApplySearchParams, searchType, text, sort } = useChangeUrl(params);
+  const { text = "", searchType = "both", sort = "popular" } = params;
 
   return (
     <div className="mt-3 flex flex-col gap-3">
-      <SearchInput handleApplyParams={onApplySearchParams} initialText={text || ""} />
-      <SearchFilter
-        handleApplyParams={onApplySearchParams}
-        initialSearchType={searchType || "both"}
-      />
-      <SearchSort handleApplyParams={onApplySearchParams} initialSort={sort || "popular"} />
+      <SearchInput initialText={text} />
+      <SearchFilter initialSearchType={searchType} />
+      <SearchSort initialSort={sort} />
     </div>
   );
 }
@@ -745,7 +798,7 @@ export { default } from "./SearchLoading";
 
 
 --- src/app/search/_components/SearchResult/_hooks/useSearch.ts ---
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { SearchQueryParams, useSearchQuery } from "@/query/search/queries/useSearchQuery";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
 
@@ -769,9 +822,7 @@ export function useSearch(params: SearchQueryParams) {
   });
 
   const searchTotal = data?.pages[0].data.total || 0;
-  const songs = useMemo(() => {
-    return data?.pages.flatMap((page) => page.data.items) || [];
-  }, [data]);
+  const songs = data?.pages.flatMap((page) => page.data.items) || [];
 
   return {
     searchTotal,
@@ -869,6 +920,8 @@ import TopNav from "@/app/_components/layout/TopNav";
 import BottomNav from "@/app/_components/layout/BottomNav";
 import { authOptions } from "@/lib/next-auth/nextAuth";
 import ToastProvider from "@/components/ui/Toast/ToastContext";
+import { ScrollPositionProvider } from "@/app/_providers/ScrollPositionProvider";
+import { getTheme } from "@/utils/theme";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -886,35 +939,22 @@ async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const theme = await getTheme();
   const session = await getServerSession(authOptions);
 
   return (
-    <html lang="ko" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                const savedTheme = localStorage.getItem('theme');
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                const theme = savedTheme || (prefersDark ? 'dark' : 'light');
-                document.documentElement.setAttribute('data-theme', theme);
-              } catch (e) {}
-            `,
-          }}
-        />
-      </head>
+    <html lang="ko" data-theme={theme} suppressHydrationWarning>
       <body className={`${manrope.variable} antialiasing`}>
         <SessionProvider session={session}>
           <QueryProvider>
             <ToastProvider maxToasts={5}>
-              <div className="flex h-screen flex-col">
-                <TopNav />
-                <main className="overflow-y-auto">
-                  <div className="h-full px-4">{children}</div>
-                </main>
-                <BottomNav />
-              </div>
+              <ScrollPositionProvider>
+                <div className="flex h-screen flex-col">
+                  <TopNav currentTheme={theme} />
+                  <main className="overflow-y-auto px-4">{children}</main>
+                  <BottomNav />
+                </div>
+              </ScrollPositionProvider>
             </ToastProvider>
           </QueryProvider>
         </SessionProvider>
@@ -1223,92 +1263,6 @@ export default SongCard;
 
 --- src/components/common/SongCard/index.ts ---
 export { default } from "./SongCard";
-
-
---- src/components/common/ThemeToggle/_hooks/useTheme.ts ---
-"use client";
-
-import { useEffect, useState } from "react";
-import { applyTheme } from "@/utils/applyTheme";
-
-type Theme = "light" | "dark";
-
-export function useTheme() {
-  const [theme, setTheme] = useState<Theme>("light");
-
-  useEffect(() => {
-    try {
-      const currentTheme = document.documentElement.getAttribute("data-theme") as Theme;
-      if (currentTheme) {
-        setTheme(currentTheme);
-      }
-    } catch (error) {
-      console.error("Error reading theme:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem("theme")) {
-        const newTheme = e.matches ? "dark" : "light";
-        setTheme(newTheme);
-        applyTheme(newTheme);
-      }
-    };
-
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    applyTheme(newTheme);
-  };
-
-  return {
-    theme,
-    toggleTheme,
-    isDark: theme === "dark",
-  };
-}
-
-
---- src/components/common/ThemeToggle/ThemeToggle.tsx ---
-"use client";
-
-import { useTheme } from "@/components/common/ThemeToggle/_hooks/useTheme";
-import { MdLightMode, MdOutlineNightlightRound } from "react-icons/md";
-import { useMounted } from "@/hooks/useMounted";
-
-function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
-  const { mounted } = useMounted();
-
-  return (
-    <button
-      onClick={toggleTheme}
-      className="relative h-10 max-h-10 w-10 rounded-md p-2 hover:bg-button-ghost"
-      aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-    >
-      {theme === "light" && <MdOutlineNightlightRound size={24} color="black" />}
-      {(theme !== "light" || !mounted) && (
-        <MdLightMode
-          size={24}
-          color="white"
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-        />
-      )}
-    </button>
-  );
-}
-
-export default ThemeToggle;
-
-
---- src/components/common/ThemeToggle/index.ts ---
-export { default } from "./ThemeToggle";
 
 
 --- src/components/ui/Button/Button.tsx ---
@@ -1656,55 +1610,69 @@ export function useMounted() {
 }
 
 
---- src/hooks/useScrollRestoration.ts ---
-import { useEffect, useState } from "react";
+--- src/hooks/useQueryInput.ts ---
+import React, { FormEvent, useEffect, useRef } from "react";
+import { useSetUrlQuery } from "@/hooks/useSetUrlQuery";
 
-interface ScrollPosition {
-  x: number;
-  y: number;
+interface UseQueryInputReturn {
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  handleSubmit: (e: FormEvent) => void;
 }
 
-export function useScrollRestoration(key: string = "default-scroll-position") {
-  const [scrollPosition, setScrollPosition] = useState<ScrollPosition>(() => {
-    if (typeof window === "undefined") return { x: 0, y: 0 };
-
-    const saved = sessionStorage.getItem(`scroll-position-${key}`);
-    return saved ? JSON.parse(saved) : { x: 0, y: 0 };
-  });
-
-  const saveScrollPosition = () => {
-    const position = {
-      x: window.scrollX,
-      y: window.scrollY,
-    };
-    setScrollPosition(position);
-    sessionStorage.setItem(`scroll-position-${key}`, JSON.stringify(position));
-  };
-
-  const restoreScrollPosition = () => {
-    if (scrollPosition.y > 0) {
-      window.scrollTo({
-        top: scrollPosition.y,
-        left: scrollPosition.x,
-        behavior: "instant",
-      });
-    }
-  };
+export function useQueryInput(initialText: string = "", param: string): UseQueryInputReturn {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const setUrlQuery = useSetUrlQuery();
 
   useEffect(() => {
-    restoreScrollPosition();
+    if (inputRef.current && initialText) {
+      inputRef.current.value = initialText;
+    }
+  }, [initialText]);
 
-    window.addEventListener("beforeunload", saveScrollPosition);
-    return () => {
-      window.removeEventListener("beforeunload", saveScrollPosition);
-      saveScrollPosition();
-    };
-  }, []);
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const text = inputRef.current?.value.trim() || "";
+    setUrlQuery(param, text);
+  };
 
   return {
-    scrollPosition,
-    saveScrollPosition,
-    restoreScrollPosition,
+    inputRef,
+    handleSubmit,
+  };
+}
+
+
+--- src/hooks/useQueryParamState.ts ---
+import React, { useState } from "react";
+import { useSetUrlQuery } from "@/hooks/useSetUrlQuery";
+
+export function useQueryParamState(initialParam: string, key: string) {
+  const [choiceParam, setChoiceParams] = useState(initialParam);
+  const setUrlQuery = useSetUrlQuery();
+
+  const applyQueryParams = (e: React.MouseEvent<HTMLButtonElement>): void => {
+    const value = e.currentTarget.value as string;
+    setChoiceParams(value);
+    setUrlQuery(key, value);
+  };
+
+  return { choiceParam, applyQueryParams };
+}
+
+
+--- src/hooks/useSetUrlQuery.ts ---
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+
+export function useSetUrlQuery() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  return (key: string, value: string) => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.set(key, value);
+
+    router.push(`${pathname}?${newParams.toString()}`);
   };
 }
 
@@ -2099,8 +2067,6 @@ export function useSearchQuery(params: SearchQueryParams) {
       return loadedItems < total ? page + 1 : undefined;
     },
     enabled: text?.length > 0,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
   });
 }
 
@@ -2202,17 +2168,6 @@ interface MeResponse {
 type AllResponse = MeResponse[];
 
 
---- src/utils/applyTheme.ts ---
-type Theme = "light" | "dark";
-
-export const applyTheme = (newTheme: Theme) => {
-  if (typeof document !== "undefined") {
-    document.documentElement.setAttribute("data-theme", newTheme);
-    localStorage.setItem("theme", newTheme);
-  }
-};
-
-
 --- src/utils/getIsomorphicSession.ts ---
 import { getSession } from "next-auth/react";
 import { getServerSession, Session } from "next-auth";
@@ -2221,5 +2176,31 @@ import { authOptions } from "@/lib/next-auth/nextAuth";
 export const getIsomorphicSession = async (): Promise<Session | null> => {
   return typeof window === "undefined" ? await getServerSession(authOptions) : await getSession();
 };
+
+
+--- src/utils/theme.ts ---
+"use server";
+
+import { cookies } from "next/headers";
+
+export type Theme = "light" | "dark";
+
+export async function setTheme(theme: Theme) {
+  const cookieStore = await cookies();
+
+  cookieStore.set({
+    name: "theme",
+    value: theme,
+    httpOnly: true,
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365, // 1년
+  });
+}
+
+export async function getTheme(): Promise<Theme> {
+  const cookieStore = await cookies();
+  const theme = cookieStore.get("theme")?.value as Theme;
+  return theme === "dark" ? "dark" : "light";
+}
 
 

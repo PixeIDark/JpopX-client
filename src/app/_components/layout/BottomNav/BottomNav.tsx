@@ -20,7 +20,7 @@ const NAV_ITEMS = [
     Icon: Search,
     IconFill: SearchFill,
   },
-];
+] as const;
 
 function BottomNav() {
   const segment = useSelectedLayoutSegment();
