@@ -1,11 +1,11 @@
 "use client";
 
 import { SearchPanelParams } from "@/types/search.type";
-import { useSearch } from "@/app/search/_components/SearchResult/_hooks/useSearch";
-import SearchLoading from "@/app/search/_components/SearchResult/SearchLoading";
+import { useSearch } from "@/app/(public)/search/_components/SearchResult/_hooks/useSearch";
+import SearchLoading from "@/app/(public)/search/_components/SearchResult/SearchLoading";
 import NotFound from "@/components/common/NotFound/NotFound";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
-import SearchList from "@/app/search/_components/SearchResult/SearchList";
+import SearchList from "@/app/(public)/search/_components/SearchResult/SearchList";
 
 interface SearchResultProps {
   params: SearchPanelParams;

@@ -16,7 +16,7 @@ export const authOptions: NextAuthOptions = {
 
           const response = await authApi.login(credentials);
 
-          const { user, accessToken, refreshToken } = response.data;
+          const { user, accessToken, refreshToken } = response;
 
           if (user && accessToken) {
             return {

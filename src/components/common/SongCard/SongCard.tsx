@@ -1,6 +1,7 @@
 import { SearchItems } from "@/types/search.type";
 import Button from "@/components/ui/Button";
 import Picture from "@/components/ui/Picture";
+import Link from "next/link";
 
 interface SongCardProps {
   song: SearchItems;
@@ -9,7 +10,7 @@ interface SongCardProps {
 function SongCard({ song }: SongCardProps) {
   const title = song.title_ko || song.title_ja;
   const artist = song.artist_ko || song.artist_ja;
-  
+
   return (
     <ul className="flex flex-row gap-1">
       <div className="h-[70px] min-w-[70px]">
@@ -37,8 +38,8 @@ function SongCard({ song }: SongCardProps) {
           <p className="text-text-ky">KY {song.kumyoung_number}</p>
         </div>
       </div>
-      <Button variant="ghost" className="h-8 min-w-20 max-w-20 text-sm font-medium">
-        Add
+      <Button variant="ghost" className="h-8 min-w-20 max-w-20 text-sm font-medium" asChild>
+        <Link href="/add-list">Add</Link>
       </Button>
     </ul>
   );

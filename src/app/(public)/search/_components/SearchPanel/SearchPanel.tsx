@@ -1,9 +1,9 @@
 "use client";
 
-import SearchInput from "@/app/search/_components/SearchPanel/SearchInput";
-import SearchFilter from "@/app/search/_components/SearchPanel/SearchFilter";
+import SearchInput from "@/app/(public)/search/_components/SearchPanel/SearchInput";
+import SearchFilter from "@/app/(public)/search/_components/SearchPanel/SearchFilter";
 import { SearchPanelParams } from "@/types/search.type";
-import SearchSort from "@/app/search/_components/SearchPanel/SearchSort/SearchSort";
+import SearchSort from "@/app/(public)/search/_components/SearchPanel/SearchSort/SearchSort";
 
 interface SearchPanelProps {
   params: SearchPanelParams;

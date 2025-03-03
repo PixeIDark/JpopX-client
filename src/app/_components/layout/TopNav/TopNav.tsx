@@ -10,6 +10,7 @@ const NAV_TITLE = {
   "/login": "Login",
   "/account": "Account",
   "/search": "Search",
+  "/add-list": "Add List",
 } as const;
 
 type NavPath = keyof typeof NAV_TITLE;

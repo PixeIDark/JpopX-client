@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
-import { SearchQueryParams, useSearchQuery } from "@/query/search/queries/useSearchQuery";
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
+import { SearchQueryParams, useSearchQuery } from "@/query/search";
 
 export function useSearch(params: SearchQueryParams) {
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -21,8 +21,8 @@ export function useSearch(params: SearchQueryParams) {
     rootMargin: "20%",
   });
 
-  const searchTotal = data?.pages[0].data.total || 0;
-  const songs = data?.pages.flatMap((page) => page.data.items) || [];
+  const searchTotal = data?.pages[0].total || 0;
+  const songs = data?.pages.flatMap((page) => page.items) || [];
 
   return {
     searchTotal,

@@ -4,5 +4,8 @@ const url = "users";
 
 export const usersApi = {
   all: () => axiosInstance.get<AllResponse>(`${url}`),
-  me: () => axiosInstance.get<MeResponse>(`${url}/me`),
+  me: async () => {
+    const response = await axiosInstance.get<MeResponse>(`${url}/me`);
+    return response.data;
+  },
 };

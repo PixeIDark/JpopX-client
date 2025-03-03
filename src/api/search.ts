@@ -3,8 +3,8 @@ import { SearchRequest, SearchResponse } from "@/types/search.type";
 
 const url = "search";
 
-export const searchApi = (params: SearchRequest) =>
-  axiosInstance.get<SearchResponse>(url, {
+export const searchApi = async (params: SearchRequest) => {
+  const response = await axiosInstance.get<SearchResponse>(url, {
     params: {
       text: params.text || "",
       searchType: params.searchType || "both",
@@ -13,3 +13,5 @@ export const searchApi = (params: SearchRequest) =>
       page: params.page || 1,
     },
   });
+  return response.data;
+};
