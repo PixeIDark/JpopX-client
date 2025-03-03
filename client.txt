@@ -5,7 +5,6 @@ import {
   AccountResponse,
   LoginRequest,
   LoginResponse,
-  LogoutResponse,
   RefreshRequest,
   RefreshResponse,
 } from "@/types/auth.type";
@@ -15,10 +14,54 @@ const url = "auth";
 export const authApi = {
   account: (data: AccountRequest) => axiosInstance.post<AccountResponse>(`${url}/signup`, data),
   login: (data: LoginRequest) => axiosInstance.post<LoginResponse>(`${url}/login`, data),
-  logout: () => axiosInstance.post<LogoutResponse>(`${url}/logout`),
-  refresh: (refreshToken: RefreshRequest) =>
-    axiosInstance.post<RefreshResponse>(`${url}/refresh`, { refreshToken }),
+  logout: async (accessToken: string) => {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+    } catch (error) {
+      console.error("Server Logout Failed:", error);
+    }
+  },
+  refresh: async (refreshToken: RefreshRequest): Promise<RefreshResponse> => {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/${url}/refresh`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    return response.json();
+  },
 };
+
+
+--- src/api/search.ts ---
+import { axiosInstance } from "@/lib/axios/instance";
+import { SearchRequest, SearchResponse } from "@/types/search.type";
+
+const url = "search";
+
+export const searchApi = (params: SearchRequest) =>
+  axiosInstance.get<SearchResponse>(url, {
+    params: {
+      text: params.text || "",
+      searchType: params.searchType || "both",
+      sort: params.sort || "popular",
+      limit: params.limit || 20,
+      page: params.page || 1,
+    },
+  });
 
 
 --- src/api/users.ts ---
@@ -41,7 +84,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import TextField from "@/components/common/Field/TextField";
 import PasswordField from "@/components/common/Field/PasswordField";
 import Button from "@/components/ui/Button";
-import { authApi } from "@/api/auth";
+import { useAccountMutation } from "@/query/auth/mutations/useAccountMutation";
 
 function AccountForm() {
   const {
@@ -51,10 +94,9 @@ function AccountForm() {
   } = useForm<AccountSchema>({
     resolver: zodResolver(accountSchema),
   });
+  const { mutate: accountMutate } = useAccountMutation();
 
-  const onSubmit = async (data: AccountSchema) => {
-    await authApi.account(data);
-  };
+  const onSubmit = (data: AccountSchema) => accountMutate(data);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="mt-3 flex flex-col gap-6">
@@ -117,14 +159,16 @@ export default AccountPage;
 
 
 --- src/app/(auth)/login/_components/LoginForm/LoginForm.tsx ---
+"use client";
+
 import { useForm } from "react-hook-form";
 import { loginSchema, LoginSchema } from "@/lib/zod/auth";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signIn } from "next-auth/react";
 import TextField from "@/components/common/Field/TextField";
 import PasswordField from "@/components/common/Field/PasswordField";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
+import { useLoginMutation } from "@/query/auth/mutations/useLoginMutation";
 
 function LoginForm() {
   const {
@@ -134,14 +178,13 @@ function LoginForm() {
   } = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
   });
+  const { mutate: loginMutate } = useLoginMutation();
 
-  const onSubmit = async (data: LoginSchema) => {
-    await signIn("credentials", {
+  const onSubmit = (data: LoginSchema) =>
+    loginMutate({
       email: data.email,
       password: data.password,
-      redirect: false,
     });
-  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="mt-3 flex flex-col gap-6">
@@ -179,11 +222,9 @@ export { default } from "./LoginForm";
 
 
 --- src/app/(auth)/login/page.tsx ---
-"use client";
-
 import LoginForm from "@/app/(auth)/login/_components/LoginForm";
 
-export default function LoginPage() {
+export default async function LoginPage() {
   return (
     <div>
       <LoginForm />
@@ -206,18 +247,18 @@ interface BottomNavItemProps {
   IconFill: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
 
-function BottomNavItem({ path, label, Icon, IconFill }: BottomNavItemProps) {
+function BottomNavItem({ item }: { item: BottomNavItemProps }) {
   const pathname = usePathname();
 
-  const isActive = path === pathname;
+  const isActive = item.path === pathname;
   return (
-    <Link href={path} className="flex w-16 flex-col items-center justify-center gap-1">
+    <Link href={item.path} className="flex w-16 flex-col items-center justify-center gap-1">
       {isActive ? (
-        <IconFill width={24} height={24} className="fill-icon-bg" />
+        <item.IconFill width={24} height={24} className="fill-icon-bg" />
       ) : (
-        <Icon width={24} height={24} className="fill-icon-stroke" />
+        <item.Icon width={24} height={24} className="fill-icon-stroke" />
       )}
-      <p className="text-xs text-text-p">{label}</p>
+      <p className="text-xs text-text-p">{item.label}</p>
     </Link>
   );
 }
@@ -234,33 +275,38 @@ export { default } from "./BottomNavItem";
 
 import Home from "@/assets/icons/home/home.svg";
 import HomeFill from "@/assets/icons/home/home_fill.svg";
+import Search from "@/assets/icons/search/search.svg";
+import SearchFill from "@/assets/icons/search/search_fill.svg";
 import BottomNavItem from "@/app/_components/layout/BottomNav/BottomNavItem";
 import { useSelectedLayoutSegment } from "next/navigation";
+
+const NAV_ITEMS = [
+  {
+    path: "/",
+    label: "home",
+    Icon: Home,
+    IconFill: HomeFill,
+  },
+  {
+    path: "/search",
+    label: "search",
+    Icon: Search,
+    IconFill: SearchFill,
+  },
+] as const;
 
 function BottomNav() {
   const segment = useSelectedLayoutSegment();
   if (segment === "(auth)") return null;
 
-  const navItems = [
-    {
-      path: "/",
-      label: "home",
-      Icon: Home,
-      IconFill: HomeFill,
-    },
-  ];
-
   return (
-    <div className="pt fixed bottom-0 -mx-4 flex w-full items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
-      {navItems.map((item) => (
-        <BottomNavItem
-          key={item.path}
-          path={item.path}
-          label={item.label}
-          Icon={item.Icon}
-          IconFill={item.IconFill}
-        />
-      ))}
+    <div>
+      <div className="pt fixed bottom-0 flex w-full items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
+        {NAV_ITEMS.map((item) => (
+          <BottomNavItem key={item.path} item={item} />
+        ))}
+      </div>
+      <div className="h-[77px] w-full" />
     </div>
   );
 }
@@ -272,37 +318,91 @@ export default BottomNav;
 export { default } from "./BottomNav";
 
 
+--- src/app/_components/layout/TopNav/ThemeToggle/ThemeToggle.tsx ---
+"use client";
+
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { MdLightMode, MdOutlineNightlightRound } from "react-icons/md";
+import { setTheme } from "@/utils/theme";
+
+interface ThemeToggleProps {
+  currentTheme: "light" | "dark";
+}
+
+function ThemeToggle({ currentTheme }: ThemeToggleProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const toggleTheme = async () => {
+    const newTheme = currentTheme === "light" ? "dark" : "light";
+
+    await setTheme(newTheme);
+
+    startTransition(() => {
+      router.refresh();
+    });
+  };
+
+  return (
+    <button
+      onClick={toggleTheme}
+      disabled={isPending}
+      className="relative h-10 max-h-10 w-10 rounded-md p-2 hover:bg-button-ghost"
+      aria-label={`Switch to ${currentTheme === "light" ? "dark" : "light"} mode`}
+    >
+      {currentTheme === "light" ? (
+        <MdOutlineNightlightRound size={24} className="text-text-h" />
+      ) : (
+        <MdLightMode size={24} className="text-text-h" />
+      )}
+    </button>
+  );
+}
+
+export default ThemeToggle;
+
+
+--- src/app/_components/layout/TopNav/ThemeToggle/index.ts ---
+export { default } from "./ThemeToggle";
+
+
 --- src/app/_components/layout/TopNav/TopNav.tsx ---
 "use client";
 
 import { ArrowLeft } from "lucide-react";
-import ThemeToggle from "@/app/_components/ThemeToggle";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
+import ThemeToggle from "@/app/_components/layout/TopNav/ThemeToggle";
 
 const NAV_TITLE = {
   "/": "Home",
   "/login": "Login",
   "/account": "Account",
+  "/search": "Search",
 } as const;
 
 type NavPath = keyof typeof NAV_TITLE;
 
-function TopNav() {
+interface TopNavProps {
+  currentTheme: "light" | "dark";
+}
+
+function TopNav({ currentTheme }: TopNavProps) {
   const pathname = usePathname();
   const router = useRouter();
 
   const title = pathname in NAV_TITLE ? NAV_TITLE[pathname as NavPath] : "Unknown Page";
 
   return (
-    <div className="pt sticky top-0 -mx-4 flex items-center justify-between border-b border-solid-default bg-body-default px-4 pb-3 pt-5">
-      <button onClick={() => router.back()}>
+    <div className="pt sticky top-0 flex items-center justify-between border-b border-solid-default bg-body-default px-4 pb-3 pt-5">
+      <button onClick={() => router.back()} className="p-2">
         <ArrowLeft size={24} strokeWidth={1.5} />
       </button>
       <Link href="/">
         <h1 className="text-lg font-semibold text-text-h">{title}</h1>
       </Link>
-      <ThemeToggle />
+      <ThemeToggle currentTheme={currentTheme} />
     </div>
   );
 }
@@ -314,38 +414,60 @@ export default TopNav;
 export { default } from "./TopNav";
 
 
---- src/app/_components/ThemeToggle.tsx ---
-"use client";
+--- src/app/_components/test/FuckAccessToken.tsx ---
+import Button from "@/components/ui/Button";
+import { getSession, signIn } from "next-auth/react";
 
-import { useTheme } from "@/hooks/useTheme";
-import { useEffect, useState } from "react";
+function FuckAccessToken() {
+  const a = async () => {
+    const session = await getSession();
+    console.log(session);
+    const result = await signIn("Refresh", {
+      refreshToken: session?.user.refreshToken,
+      accessToken: "f",
+      redirect: false,
+    });
+  };
 
-function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  // 마운트 된 후에만 UI 렌더링
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // 마운트되기 전에는 아무것도 표시하지 않음
-  if (!mounted) {
-    return <div className="h-8 w-8"></div>; // 빈 공간 유지
-  }
-
-  return (
-    <button
-      onClick={toggleTheme}
-      className="hover:bg-button-ghost rounded-md p-2"
-      aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-    >
-      {theme === "light" ? "🌙" : "☀️"}
-    </button>
-  );
+  return <Button onClick={a}>Fuck AccessToken!</Button>;
 }
 
-export default ThemeToggle;
+export default FuckAccessToken;
+
+
+--- src/app/_components/test/GetMe.tsx ---
+import Button from "@/components/ui/Button";
+import { usersApi } from "@/api/users";
+
+function GetMe() {
+  const a = async () => {
+    const b = await usersApi.me();
+    console.log(b);
+  };
+
+  return <Button onClick={a}>Get me</Button>;
+}
+
+export default GetMe;
+
+
+--- src/app/_components/test/LogoutMe.tsx ---
+import Button from "@/components/ui/Button";
+import { getSession, signOut } from "next-auth/react";
+
+function LogoutMe() {
+  const a = async () => {
+    let session = await getSession();
+    console.log(session);
+    await signOut({ redirect: false });
+    session = await getSession();
+    console.log(session);
+  };
+
+  return <Button onClick={a}>log out</Button>;
+}
+
+export default LogoutMe;
 
 
 --- src/app/_providers/QueryProvider.tsx ---
@@ -360,7 +482,10 @@ const makeQueryClient = () => {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 60 * 1000,
+        staleTime: 5 * 60 * 1000,
+        gcTime: 10 * 60 * 1000,
+        refetchOnMount: false,
+        refetchOnWindowFocus: false,
       },
     },
   });
@@ -383,12 +508,77 @@ function QueryProvider({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ReactQueryStreamedHydration>{children}</ReactQueryStreamedHydration>
-      <ReactQueryDevtools initialIsOpen={false} />
+      <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
     </QueryClientProvider>
   );
 }
 
 export default QueryProvider;
+
+
+--- src/app/_providers/ScrollPositionProvider.tsx ---
+"use client";
+
+import React, { useCallback, useEffect, useRef } from "react";
+
+export function ScrollPositionProvider({ children }: { children: React.ReactNode }) {
+  const mainRef = useRef<HTMLDivElement | null>(null);
+  const previousUrlRef = useRef<string>("");
+
+  const loadScroll = useCallback(() => {
+    if (!mainRef.current) return;
+
+    const scrollKey = `scroll_${window.location.href}`;
+    const scrollValue = sessionStorage.getItem(scrollKey);
+
+    if (scrollValue && Number(scrollValue) > 0) {
+      mainRef.current.scrollTop = Number(scrollValue);
+    }
+  }, []);
+
+  useEffect(() => {
+    const mainElement = document.querySelector("main.overflow-y-auto");
+    if (mainElement) mainRef.current = mainElement as HTMLDivElement;
+
+    const updateScrollInUrl = () => {
+      if (mainRef.current) {
+        const scrollValue = Math.round(mainRef.current.scrollTop);
+        if (scrollValue > 0) {
+          const scrollKey = `scroll_${window.location.href}`;
+          sessionStorage.setItem(scrollKey, scrollValue.toString());
+        }
+
+        previousUrlRef.current = window.location.href;
+      }
+      return true;
+    };
+
+    const handlePopState = () => {
+      if (mainRef.current) {
+        const scrollValue = Math.round(mainRef.current.scrollTop);
+        if (scrollValue > 0) {
+          const scrollKey = `scroll_${previousUrlRef.current}`;
+          sessionStorage.setItem(scrollKey, scrollValue.toString());
+        }
+
+        previousUrlRef.current = window.location.href;
+
+        setTimeout(loadScroll, 50);
+      }
+      return true;
+    };
+
+    document.addEventListener("click", updateScrollInUrl, { passive: true });
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      document.removeEventListener("click", updateScrollInUrl);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [loadScroll]);
+
+  return <>{children}</>;
+}
 
 
 --- src/app/_providers/SessionProvider.tsx ---
@@ -418,6 +608,306 @@ const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
 
 
+--- src/app/search/_components/SearchPanel/SearchFilter/SearchFilter.tsx ---
+import Button from "@/components/ui/Button";
+import React from "react";
+import { SearchType } from "@/types/search.type";
+import { useQueryParamState } from "@/hooks/useQueryParamState";
+
+interface SearchFilterProps {
+  initialSearchType: SearchType;
+}
+
+const SEARCH_TYPES = ["both", "title", "artist"] as const;
+
+function SearchFilter({ initialSearchType }: SearchFilterProps) {
+  const { choiceParam, applyQueryParams } = useQueryParamState(initialSearchType, "search");
+
+  return (
+    <div className="flex gap-3">
+      {SEARCH_TYPES.map((type, idx) => (
+        <Button
+          key={idx}
+          variant={choiceParam === type ? "outline" : "ghost"}
+          value={type}
+          onClick={applyQueryParams}
+          className="h-11 max-w-[70px] text-sm"
+        >
+          {type}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+export default SearchFilter;
+
+
+--- src/app/search/_components/SearchPanel/SearchFilter/index.ts ---
+export { default } from "./SearchFilter";
+
+
+--- src/app/search/_components/SearchPanel/SearchInput/SearchInput.tsx ---
+"use client";
+
+import Input from "@/components/ui/Input";
+import { useQueryInput } from "@/hooks/useQueryInput";
+
+interface SearchInputProps {
+  initialText: string;
+}
+
+function SearchInput({ initialText }: SearchInputProps) {
+  const { handleSubmit, inputRef } = useQueryInput(initialText, "text");
+
+  return (
+    <form onSubmit={handleSubmit} className="w-full">
+      <Input
+        placeholder="Please Enter Something"
+        ref={inputRef}
+        type="text"
+        defaultValue={initialText}
+      />
+    </form>
+  );
+}
+
+export default SearchInput;
+
+
+--- src/app/search/_components/SearchPanel/SearchInput/index.ts ---
+export { default } from "./SearchInput";
+
+
+--- src/app/search/_components/SearchPanel/SearchSort/SearchSort.tsx ---
+"use client";
+
+import Button from "@/components/ui/Button";
+import { Sort } from "@/types/search.type";
+import React from "react";
+import { useQueryParamState } from "@/hooks/useQueryParamState";
+
+interface SearchSortProps {
+  initialSort: Sort;
+}
+
+const SORT_TYPES = ["popular", "latest"] as const;
+
+function SearchSort({ initialSort }: SearchSortProps) {
+  const { choiceParam, applyQueryParams } = useQueryParamState(initialSort, "search");
+
+  return (
+    <div className="flex rounded-xl bg-button-ghost p-1">
+      {SORT_TYPES.map((sort, idx) => (
+        <Button
+          key={idx}
+          variant={choiceParam === sort ? "link" : "ghost"}
+          value={sort}
+          onClick={applyQueryParams}
+          className="h-8"
+        >
+          {sort}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+export default SearchSort;
+
+
+--- src/app/search/_components/SearchPanel/SearchSort/index.ts ---
+
+
+--- src/app/search/_components/SearchPanel/SearchPanel.tsx ---
+"use client";
+
+import SearchInput from "@/app/search/_components/SearchPanel/SearchInput";
+import SearchFilter from "@/app/search/_components/SearchPanel/SearchFilter";
+import { SearchPanelParams } from "@/types/search.type";
+import SearchSort from "@/app/search/_components/SearchPanel/SearchSort/SearchSort";
+
+interface SearchPanelProps {
+  params: SearchPanelParams;
+}
+
+function SearchPanel({ params }: SearchPanelProps) {
+  const { text = "", searchType = "both", sort = "popular" } = params;
+
+  return (
+    <div className="mt-3 flex flex-col gap-3">
+      <SearchInput initialText={text} />
+      <SearchFilter initialSearchType={searchType} />
+      <SearchSort initialSort={sort} />
+    </div>
+  );
+}
+
+export default SearchPanel;
+
+
+--- src/app/search/_components/SearchPanel/index.ts ---
+export { default } from "./SearchPanel";
+
+
+--- src/app/search/_components/SearchResult/SearchList/SearchList.tsx ---
+import { SearchItems } from "@/types/search.type";
+import SongCard from "@/components/common/SongCard";
+
+interface SearchListProps {
+  songs: SearchItems[];
+}
+
+function SearchList({ songs }: SearchListProps) {
+  return (
+    <li className="flex flex-col gap-6">
+      {songs.map((song) => (
+        <SongCard key={song.id} song={song} />
+      ))}
+    </li>
+  );
+}
+
+export default SearchList;
+
+
+--- src/app/search/_components/SearchResult/SearchList/index.ts ---
+export { default } from "./SearchList";
+
+
+--- src/app/search/_components/SearchResult/SearchLoading/SearchLoading.tsx ---
+import LoadingSpinner from "@/components/common/LoadingSpinner";
+
+interface SearchResultProps {
+  isLoading: boolean;
+}
+
+function SearchLoading({ isLoading }: SearchResultProps) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center">
+      <LoadingSpinner isLoading={isLoading} size={40} />
+    </div>
+  );
+}
+
+export default SearchLoading;
+
+
+--- src/app/search/_components/SearchResult/SearchLoading/index.ts ---
+export { default } from "./SearchLoading";
+
+
+--- src/app/search/_components/SearchResult/_hooks/useSearch.ts ---
+import { useCallback, useRef } from "react";
+import { SearchQueryParams, useSearchQuery } from "@/query/search/queries/useSearchQuery";
+import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
+
+export function useSearch(params: SearchQueryParams) {
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, error } =
+    useSearchQuery(params);
+
+  const handleIntersect = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  useIntersectionObserver({
+    target: loadMoreRef,
+    onIntersect: handleIntersect,
+    enabled: hasNextPage,
+    rootMargin: "20%",
+  });
+
+  const searchTotal = data?.pages[0].data.total || 0;
+  const songs = data?.pages.flatMap((page) => page.data.items) || [];
+
+  return {
+    searchTotal,
+    songs,
+    isLoading,
+    isError,
+    error,
+    isFetchingNextPage,
+    hasNextPage,
+    loadMoreRef,
+  };
+}
+
+
+--- src/app/search/_components/SearchResult/SearchResult.tsx ---
+"use client";
+
+import { SearchPanelParams } from "@/types/search.type";
+import { useSearch } from "@/app/search/_components/SearchResult/_hooks/useSearch";
+import SearchLoading from "@/app/search/_components/SearchResult/SearchLoading";
+import NotFound from "@/components/common/NotFound/NotFound";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
+import SearchList from "@/app/search/_components/SearchResult/SearchList";
+
+interface SearchResultProps {
+  params: SearchPanelParams;
+}
+
+const DISPLAY_COUNT = 2;
+
+function SearchResult({ params }: SearchResultProps) {
+  if (!params || params.text === undefined) return null;
+
+  const { loadMoreRef, isLoading, songs, isFetchingNextPage, searchTotal } = useSearch({
+    ...params,
+    text: params.text, // 그냥 params 넣으면 params.text 는 string 인게 검증되었는데도 뭐라고함
+  });
+
+  if (isLoading) return <SearchLoading isLoading={isLoading} />;
+
+  if (!songs.length) return <NotFound text="Don't have any songs!" />;
+
+  const displayLimit = songs.length - DISPLAY_COUNT;
+  const displayedSongs = songs.slice(0, displayLimit);
+  const overflowSongs = songs.slice(displayLimit);
+
+  return (
+    <div className="mt-2">
+      <p className="mb-2 text-sm font-normal text-text-p">{searchTotal} results</p>
+      <SearchList songs={displayedSongs} />
+      <div ref={loadMoreRef} className="h-0 w-full py-3" />
+      <SearchList songs={overflowSongs} />
+      {isFetchingNextPage && <LoadingSpinner isLoading={isFetchingNextPage} />}
+    </div>
+  );
+}
+
+export default SearchResult;
+
+
+--- src/app/search/_components/SearchResult/index.ts ---
+export { default } from "./SearchResult";
+
+
+--- src/app/search/page.tsx ---
+"use server";
+
+import SearchPanel from "@/app/search/_components/SearchPanel";
+import SearchResult from "@/app/search/_components/SearchResult";
+import { SearchPanelParams } from "@/types/search.type";
+
+async function SearchPage({ searchParams }: { searchParams: Promise<SearchPanelParams> }) {
+  const params = await searchParams;
+
+  return (
+    <div>
+      <SearchPanel params={params} />
+      <SearchResult params={params} />
+    </div>
+  );
+}
+
+export default SearchPage;
+
+
 --- src/app/layout.tsx ---
 import React from "react";
 import "./globals.css";
@@ -428,6 +918,10 @@ import SessionProvider from "@/app/_providers/SessionProvider";
 import QueryProvider from "@/app/_providers/QueryProvider";
 import TopNav from "@/app/_components/layout/TopNav";
 import BottomNav from "@/app/_components/layout/BottomNav";
+import { authOptions } from "@/lib/next-auth/nextAuth";
+import ToastProvider from "@/components/ui/Toast/ToastContext";
+import { ScrollPositionProvider } from "@/app/_providers/ScrollPositionProvider";
+import { getTheme } from "@/utils/theme";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -445,30 +939,23 @@ async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getServerSession();
+  const theme = await getTheme();
+  const session = await getServerSession(authOptions);
 
   return (
-    <html lang="ko" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                const savedTheme = localStorage.getItem('theme');
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                const theme = savedTheme || (prefersDark ? 'dark' : 'light');
-                document.documentElement.setAttribute('data-theme', theme);
-              } catch (e) {}
-            `,
-          }}
-        />
-      </head>
-      <body className={`${manrope.variable} antialiased`}>
+    <html lang="ko" data-theme={theme} suppressHydrationWarning>
+      <body className={`${manrope.variable} antialiasing`}>
         <SessionProvider session={session}>
           <QueryProvider>
-            <TopNav />
-            {children}
-            <BottomNav />
+            <ToastProvider maxToasts={5}>
+              <ScrollPositionProvider>
+                <div className="flex h-screen flex-col">
+                  <TopNav currentTheme={theme} />
+                  <main className="overflow-y-auto px-4">{children}</main>
+                  <BottomNav />
+                </div>
+              </ScrollPositionProvider>
+            </ToastProvider>
           </QueryProvider>
         </SessionProvider>
       </body>
@@ -480,221 +967,43 @@ export default RootLayout;
 
 
 --- src/app/page.tsx ---
+"use client";
+
 import Button from "@/components/ui/Button";
 import Link from "next/link";
-import React from "react";
+import { useToast } from "@/components/ui/Toast/useToast";
+import FuckAccessToken from "@/app/_components/test/FuckAccessToken";
+import GetMe from "@/app/_components/test/GetMe";
+import LogoutMe from "@/app/_components/test/LogoutMe";
 
-async function HomePage() {
+function HomePage() {
+  const { toast } = useToast();
+
+  const handleButtonClick = () => {
+    toast({
+      title: "알림",
+      message: "작업이 완료되었습니다!",
+      type: "error",
+    });
+  };
+
   return (
-    <div>
+    <div className="flex flex-col gap-2">
       <Button>outline</Button>
       <Button variant="link">link</Button>
       <Button variant="ghost">ghost</Button>
-      <Button variant="active">active</Button>
-      <Button variant="error" asChild>
-        <Link href="/login">go to page</Link>
+      <Button variant="active" onClick={handleButtonClick}>
+        active
       </Button>
-      <p>
-        l lorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem
-        ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem ipsumlorem
-        ipsumlorem ipsum Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
-        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
-        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
-        dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus
-        ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet
-        ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing
-        elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam
-        risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel
-        laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur
-        adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur
-        laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus,
-        congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet,
-        consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus
-        efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce
-        dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit
-        amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque
-        dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna.
-        Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet.Lorem ipsum dolor
-        sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis.
-        Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat,
-        ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec
-        aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar
-        tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a
-        molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae
-        odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
-        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
-        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
-        dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus
-        ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet
-        ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing
-        elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam
-        risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel
-        laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur
-        adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur
-        laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus,
-        congue vel laoreet ac, dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet,
-        consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus
-        efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce
-        dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit
-        amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque
-        dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna.
-        Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor
-        sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis.
-        Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat,
-        ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec
-        aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor
-        nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie
-        consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio.
-        Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar
-        tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a
-        molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae
-        odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
-        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
-        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
-        dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus
-        ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet
-        ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing
-        elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam
-        risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel
-        laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur
-        adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur
-        laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus,
-        congue vel laoreet ac, dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet,
-        consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus
-        efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce
-        dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit
-        amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque
-        dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna.
-        Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor
-        sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis.
-        Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat,
-        ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec
-        aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor
-        nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie
-        consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio.
-        Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar
-        tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a
-        molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae
-        odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
-        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
-        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
-        dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus
-        ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet
-        ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing
-        elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam
-        risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel
-        laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur
-        adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur
-        laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus,
-        congue vel laoreet ac, dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet,
-        consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus
-        efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce
-        dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit
-        amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque
-        dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna.
-        Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor
-        sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis.
-        Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat,
-        ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec
-        aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor
-        nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie
-        consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio.
-        Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar
-        tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a
-        molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae
-        odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
-        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
-        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
-        dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus
-        ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet
-        ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing
-        elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam
-        risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel
-        laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur
-        adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur
-        laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus,
-        congue vel laoreet ac, dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet,
-        consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus
-        efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce
-        dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit
-        amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque
-        dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna.
-        Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor
-        sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis.
-        Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat,
-        ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec
-        aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor
-        nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie
-        consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio.
-        Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar
-        tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a
-        molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae
-        odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
-        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
-        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
-        dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus
-        ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet
-        ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing
-        elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam
-        risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel
-        laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur
-        adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur
-        laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus,
-        congue vel laoreet ac, dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet,
-        consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus
-        efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce
-        dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit
-        amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque
-        dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna.
-        Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor
-        sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis.
-        Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat,
-        ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec
-        aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor
-        nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie
-        consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio.
-        Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar
-        tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a
-        molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae
-        odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
-        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
-        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
-        dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus
-        ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet
-        ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing
-        elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam
-        risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel
-        laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur
-        adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus efficitur
-        laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus,
-        congue vel laoreet ac, dictum vitae odio. Donec aliquet.Lorem ipsum dolor sit amet,
-        consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque dapibus
-        efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna. Fusce
-        dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor sit
-        amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis. Pellentesque
-        dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat, ultrices ac magna.
-        Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec aliquet. Lorem ipsum dolor
-        sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor nec facilisis.
-        Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie consequat,
-        ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio. Donec
-        aliquet.Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar tortor
-        nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a molestie
-        consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae odio.
-        Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia pulvinar
-        tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante, dapibus a
-        molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac, dictum vitae
-        odio. Donec aliquet. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam lacinia
-        pulvinar tortor nec facilisis. Pellentesque dapibus efficitur laoreet. Nam risus ante,
-        dapibus a molestie consequat, ultrices ac magna. Fusce dui lectus, congue vel laoreet ac,
-        dictum vitae odio. Donec aliquet.
-      </p>
+      <Button variant="error" asChild>
+        <Link href="/search">go to page Search</Link>
+      </Button>
+      <Button variant="link" asChild>
+        <Link href="/login">go to page Login</Link>
+      </Button>
+      <FuckAccessToken />
+      <GetMe />
+      <LogoutMe />
     </div>
   );
 }
@@ -857,6 +1166,105 @@ export default TextField;
 export { default } from "./TextField";
 
 
+--- src/components/common/LoadingSpinner/LoadingSpinner.tsx ---
+import { Loader } from "lucide-react";
+
+interface LoadingSpinnerProps {
+  isLoading: boolean;
+  className?: string;
+  size?: number;
+}
+
+function LoadingSpinner({ isLoading, className, size = 24 }: LoadingSpinnerProps) {
+  if (!isLoading) return null;
+
+  return (
+    <div className={`${className} flex w-full items-center justify-center py-4`}>
+      <Loader size={size} className="animate-rotate" />
+    </div>
+  );
+}
+
+export default LoadingSpinner;
+
+
+--- src/components/common/LoadingSpinner/index.ts ---
+export { default } from "./LoadingSpinner";
+
+
+--- src/components/common/NotFound/NotFound.tsx ---
+interface NotFoundProps {
+  text?: string;
+}
+
+function NotFound({ text = "Not Found" }: NotFoundProps) {
+  return (
+    <div className="mt-32 flex items-center justify-center">
+      <h1 className="text-2xl font-semibold text-text-h">{text}</h1>
+    </div>
+  );
+}
+
+export default NotFound;
+
+
+--- src/components/common/NotFound/index.ts ---
+
+
+--- src/components/common/SongCard/SongCard.tsx ---
+import { SearchItems } from "@/types/search.type";
+import Image from "next/image";
+import Button from "@/components/ui/Button";
+
+interface SongCardProps {
+  song: SearchItems;
+}
+
+function SongCard({ song }: SongCardProps) {
+  const title = song.title_ko || song.title_ja;
+  const artist = song.artist_ko || song.artist_ja;
+
+  return (
+    <ul className="flex flex-row gap-1">
+      <Image
+        src={song.thumbnail_url || "asdf"}
+        alt={`${artist}'s ${title} Image`}
+        width={70}
+        height={70}
+        className="rounded-xl"
+      />
+      <div className="ml-3 flex w-full flex-col justify-between">
+        <h1
+          className="overflow-hidden text-ellipsis whitespace-nowrap text-text-h"
+          style={{ maxWidth: "calc(152px + (187 - 152) * ((100vw - 365px) / 35))" }}
+        >
+          {title}
+        </h1>
+        <p
+          className="overflow-hidden text-ellipsis whitespace-nowrap text-sm text-text-p"
+          style={{ maxWidth: "calc(152px + (187 - 152) * ((100vw - 365px) / 35))" }}
+        >
+          {artist}
+        </p>
+        <div className="flex gap-2 text-sm">
+          <p className="w-16 text-text-tj">TJ {song.tj_number}</p>
+          <p className="text-text-ky">KY {song.kumyoung_number}</p>
+        </div>
+      </div>
+      <Button variant="ghost" className="h-8 min-w-20 max-w-20 text-sm font-medium">
+        Add
+      </Button>
+    </ul>
+  );
+}
+
+export default SongCard;
+
+
+--- src/components/common/SongCard/index.ts ---
+export { default } from "./SongCard";
+
+
 --- src/components/ui/Button/Button.tsx ---
 import React from "react";
 
@@ -883,7 +1291,7 @@ function Button({
   asChild = false,
   ...props
 }: ButtonProps) {
-  const buttonStyles = `${className || ""} ${styles[variant]} hover:brightness-90 hover:shadow-md flex justify-center items-center bg-button-active text-text-h h-12 w-full rounded-xl text-base font-semibold transition-all duration-200`;
+  const buttonStyles = `${className || ""} ${styles[variant]} button-hover flex justify-center items-center bg-button-active text-text-h h-12 w-full rounded-xl text-base font-semibold transition-all duration-200`;
 
   if (asChild && React.isValidElement(children)) {
     const childProps = children.props as any;
@@ -939,65 +1347,345 @@ export default Input;
 export { default } from "./Input";
 
 
---- src/hooks/useTheme.ts ---
+--- src/components/ui/Toast/Toast.tsx ---
 "use client";
 
-import { useEffect, useState } from "react";
-import { applyTheme } from "@/utils/applyTheme";
+import React, { useEffect, useState } from "react";
+import { X } from "lucide-react";
 
-type Theme = "light" | "dark";
+const TOAST_LIFETIME = 3 * 1000;
 
-export function useTheme() {
-  const [theme, setTheme] = useState<Theme>("light");
+const styles = {
+  success: "border-l-button-active text-button-active",
+  error: "border-l-button-error text-button-error",
+} as const;
+
+export type ToastType = "success" | "error";
+
+export interface ToastProps {
+  id: string;
+  title?: string;
+  message: string;
+  type?: ToastType;
+  duration?: number;
+  onClose: (id: string) => void;
+}
+
+function Toast({
+  id,
+  title,
+  message,
+  type = "success",
+  duration = TOAST_LIFETIME,
+  onClose,
+}: ToastProps) {
+  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
-    try {
-      const currentTheme = document.documentElement.getAttribute("data-theme") as Theme;
-      if (currentTheme) {
-        setTheme(currentTheme);
-      }
-    } catch (error) {
-      console.error("Error reading theme:", error);
+    if (duration !== Infinity) {
+      const timer = setTimeout(() => {
+        onClose(id);
+      }, duration);
+
+      return () => clearTimeout(timer);
     }
+  }, [id, duration, onClose]);
+
+  return (
+    <div
+      className={`${styles[type]} animate-fadeIn border-1 mb-2 flex min-w-80 max-w-md items-start justify-between rounded-md border-l-4 border-stroke-default bg-body-default p-4 shadow-md`}
+      role="alert"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onMouseUp={() => onClose(id)}
+    >
+      <div>
+        {title && <h1 className="font-bold">{title}</h1>}
+        <p className="text-sm text-text-p">{message}</p>
+      </div>
+      {isHovered && (
+        <button
+          className="absolute right-2 top-2 transition-opacity duration-200 focus:outline-none"
+          onClick={(e) => {
+            e.stopPropagation(); // 클릭 이벤트가 상위로 전파되는 것을 방지
+            onClose(id);
+          }}
+          aria-label="닫기"
+        >
+          <X size={18} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default Toast;
+
+
+--- src/components/ui/Toast/ToastContainer.tsx ---
+import Toast from "./Toast";
+import { ToastItem } from "./ToastContext";
+
+interface ToastContainerProps {
+  toasts: ToastItem[];
+  removeToast: (id: string) => void;
+}
+
+function ToastContainer({ toasts, removeToast }: ToastContainerProps) {
+  return (
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col" aria-live="polite">
+      {toasts.map((toast) => (
+        <Toast
+          key={toast.id}
+          id={toast.id}
+          title={toast.title}
+          message={toast.message}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={removeToast}
+        />
+      ))}
+    </div>
+  );
+}
+
+export default ToastContainer;
+
+
+--- src/components/ui/Toast/ToastContext.tsx ---
+"use client";
+
+import React, { createContext, ReactNode, useCallback, useState } from "react";
+import ToastContainer from "./ToastContainer";
+import { ToastType } from "./Toast";
+
+export interface ToastItem {
+  id: string;
+  title?: string;
+  message: string;
+  type?: ToastType;
+  duration?: number;
+}
+
+interface ToastContextType {
+  toast: (options: Omit<ToastItem, "id">) => void;
+  removeToast: (id: string) => void;
+}
+
+export const ToastContext = createContext<ToastContextType | undefined>(undefined);
+
+interface ToastProviderProps {
+  children: ReactNode;
+  maxToasts?: number;
+}
+
+function ToastProvider({ children, maxToasts = 5 }: ToastProviderProps) {
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+
+  const toast = useCallback(
+    (options: Omit<ToastItem, "id">) => {
+      const newToast = {
+        id: crypto.randomUUID(),
+        ...options,
+      };
+
+      setToasts((prevToasts) => {
+        const updatedToasts = [...prevToasts, newToast];
+        if (updatedToasts.length > maxToasts) {
+          return updatedToasts.slice(updatedToasts.length - maxToasts);
+        }
+        return updatedToasts;
+      });
+
+      return newToast.id;
+    },
+    [maxToasts]
+  );
+
+  const removeToast = useCallback((id: string) => {
+    setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
   }, []);
+
+  return (
+    <ToastContext.Provider value={{ toast, removeToast }}>
+      {children}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+    </ToastContext.Provider>
+  );
+}
+
+export default ToastProvider;
+
+
+--- src/components/ui/Toast/useToast.ts ---
+import { useContext } from "react";
+import { ToastContext } from "./ToastContext";
+import { ToastType } from "./Toast";
+
+interface ToastOptions {
+  title?: string;
+  message: string;
+  type?: ToastType;
+  duration?: number;
+}
+
+export function useToast() {
+  const context = useContext(ToastContext);
+
+  if (context === undefined) {
+    throw new Error("useToast must be used within a ToastProvider");
+  }
+
+  const { toast: showToast, removeToast } = context;
+
+  const toast = Object.assign((options: ToastOptions) => showToast(options), {
+    success: (message: string, title?: string, duration?: number) =>
+      showToast({ message, title, type: "success", duration }),
+    error: (message: string, title?: string, duration?: number) =>
+      showToast({ message, title, type: "error", duration }),
+    dismiss: (id: string) => removeToast(id),
+  });
+
+  return { toast };
+}
+
+
+--- src/hooks/useIntersectionObserver.ts ---
+import { RefObject, useEffect } from "react";
+
+interface UseIntersectionObserverProps {
+  target: RefObject<Element | null>;
+  onIntersect: () => void;
+  enabled?: boolean;
+  rootMargin?: string;
+  threshold?: number;
+}
+
+export function useIntersectionObserver({
+  target,
+  onIntersect,
+  enabled = true,
+  rootMargin = "0px",
+  threshold = 0.1,
+}: UseIntersectionObserverProps) {
+  useEffect(() => {
+    if (!enabled || !target.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            onIntersect();
+          }
+        });
+      },
+      {
+        rootMargin,
+        threshold,
+      }
+    );
+
+    const element = target.current;
+    observer.observe(element);
+
+    return () => {
+      if (element) observer.unobserve(element);
+    };
+  }, [target, enabled, onIntersect, rootMargin, threshold]);
+}
+
+
+--- src/hooks/useMounted.ts ---
+import { useEffect, useState } from "react";
+
+export function useMounted() {
+  const [mounted, setMounted] = useState(false);
+
+  // 마운트 된 후에만 UI 렌더링
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  return { mounted };
+}
+
+
+--- src/hooks/useQueryInput.ts ---
+import React, { FormEvent, useEffect, useRef } from "react";
+import { useSetUrlQuery } from "@/hooks/useSetUrlQuery";
+
+interface UseQueryInputReturn {
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  handleSubmit: (e: FormEvent) => void;
+}
+
+export function useQueryInput(initialText: string = "", param: string): UseQueryInputReturn {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const setUrlQuery = useSetUrlQuery();
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem("theme")) {
-        const newTheme = e.matches ? "dark" : "light";
-        setTheme(newTheme);
-        applyTheme(newTheme);
-      }
-    };
+    if (inputRef.current && initialText) {
+      inputRef.current.value = initialText;
+    }
+  }, [initialText]);
 
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
-  }, []);
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-    setTheme(newTheme);
-    applyTheme(newTheme);
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const text = inputRef.current?.value.trim() || "";
+    setUrlQuery(param, text);
   };
 
   return {
-    theme,
-    toggleTheme,
-    isDark: theme === "dark",
+    inputRef,
+    handleSubmit,
+  };
+}
+
+
+--- src/hooks/useQueryParamState.ts ---
+import React, { useState } from "react";
+import { useSetUrlQuery } from "@/hooks/useSetUrlQuery";
+
+export function useQueryParamState(initialParam: string, key: string) {
+  const [choiceParam, setChoiceParams] = useState(initialParam);
+  const setUrlQuery = useSetUrlQuery();
+
+  const applyQueryParams = (e: React.MouseEvent<HTMLButtonElement>): void => {
+    const value = e.currentTarget.value as string;
+    setChoiceParams(value);
+    setUrlQuery(key, value);
+  };
+
+  return { choiceParam, applyQueryParams };
+}
+
+
+--- src/hooks/useSetUrlQuery.ts ---
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+
+export function useSetUrlQuery() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  return (key: string, value: string) => {
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.set(key, value);
+
+    router.push(`${pathname}?${newParams.toString()}`);
   };
 }
 
 
 --- src/lib/axios/instance.ts ---
 import axios from "axios";
-import { getServerSession } from "next-auth";
-import { RefreshRequest, RefreshResponse } from "@/types/auth.type";
-import { signIn } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
+import { authApi } from "@/api/auth";
+import { getIsomorphicSession } from "@/utils/getIsomorphicSession";
 
 export const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
-  timeout: 1000,
+  timeout: 5000,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -1007,7 +1695,7 @@ export const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   async function (config) {
     try {
-      const session = await getServerSession();
+      const session = await getIsomorphicSession();
 
       if (session?.user?.accessToken) {
         config.headers.Authorization = `Bearer ${session.user.accessToken}`;
@@ -1024,24 +1712,7 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-async function refreshAccessToken(refreshToken: RefreshRequest) {
-  try {
-    const response = await axios.post<RefreshResponse>(
-      `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-      { refreshToken },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      }
-    );
-    return response.data;
-  } catch (error) {
-    console.error("Token refresh failed:", error);
-    throw error;
-  }
-}
+const MAX_RETRIES = 3;
 
 axiosInstance.interceptors.response.use(
   function (response) {
@@ -1050,7 +1721,8 @@ axiosInstance.interceptors.response.use(
   async function (error) {
     const originalRequest = error.config;
 
-    if (originalRequest._retry === 3) {
+    if (originalRequest._retry >= MAX_RETRIES) {
+      await signOut({ redirect: true, callbackUrl: "/login" });
       return Promise.reject(error);
     }
 
@@ -1059,16 +1731,15 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry++;
 
       try {
-        const session = await getServerSession();
+        const session = await getIsomorphicSession();
 
         if (!session?.user?.refreshToken) {
-          // 리프레시 토큰이 없으면 로그인 페이지로 리디렉션 로직 추가 가능
+          await signOut({ redirect: true, callbackUrl: "/login" });
           return Promise.reject(error);
         }
 
         const refreshToken = session.user.refreshToken;
-        const data = await refreshAccessToken(refreshToken);
-
+        const data = await authApi.refresh(refreshToken);
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
 
         await signIn("Refresh", {
@@ -1079,8 +1750,7 @@ axiosInstance.interceptors.response.use(
 
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        // 리프레시 실패 시 로그아웃 처리 등 구현 가능
-        console.error("Token refresh failed:", refreshError);
+        console.error(`${originalRequest._retry}th Failed:`, refreshError);
         return Promise.reject(refreshError);
       }
     }
@@ -1094,7 +1764,6 @@ axiosInstance.interceptors.response.use(
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { authApi } from "@/api/auth";
-import axios from "axios";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -1119,6 +1788,7 @@ export const authOptions: NextAuthOptions = {
               id: user.id,
               email: user.email,
               name: user.name,
+              profile_image_url: user.profile_image_url,
             };
           }
 
@@ -1129,6 +1799,7 @@ export const authOptions: NextAuthOptions = {
       },
     }),
     CredentialsProvider({
+      id: "Refresh",
       name: "Refresh",
       credentials: {
         refreshToken: { label: "RefreshToken", type: "refresh_token" },
@@ -1139,16 +1810,16 @@ export const authOptions: NextAuthOptions = {
           if (!credentials?.accessToken || !credentials?.refreshToken) return null;
 
           const { accessToken, refreshToken } = credentials;
-          const { data } = await axios.get<MeResponse>(
-            `${process.env.NEXT_PUBLIC_API_URL}users/me`,
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-          );
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+          });
+
+          const data = await response.json();
 
           return {
             accessToken,
@@ -1156,6 +1827,7 @@ export const authOptions: NextAuthOptions = {
             id: data.id,
             email: data.email,
             name: data.name,
+            profile_image_url: data.profile_image_url,
           };
         } catch (error) {
           return null;
@@ -1163,6 +1835,11 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+  events: {
+    async signOut({ token }) {
+      if (token?.accessToken) await authApi.logout(token.accessToken);
+    },
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -1171,6 +1848,7 @@ export const authOptions: NextAuthOptions = {
         token.id = Number(user.id);
         token.name = user.name;
         token.email = user.email;
+        token.profile_image_url = user.profile_image_url;
       }
       return token;
     },
@@ -1185,6 +1863,10 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
     maxAge: 7 * 24 * 60 * 60,
   },
+  // pages: {
+  //   signIn: "/login",
+  //   error: "/login",
+  // },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
@@ -1200,6 +1882,7 @@ declare module "next-auth" {
       id: number;
       name: string;
       email: string;
+      profile_image_url: string | null;
     } & DefaultSession["user"];
   }
 
@@ -1209,6 +1892,7 @@ declare module "next-auth" {
     id: number;
     name: string;
     email: string;
+    profile_image_url: string | null;
   }
 }
 
@@ -1219,6 +1903,7 @@ declare module "next-auth/jwt" {
     id: number;
     name: string;
     email: string;
+    profile_image_url: string | null;
   }
 }
 
@@ -1255,11 +1940,151 @@ export type LoginSchema = z.infer<typeof loginSchema>;
 export type AccountSchema = z.infer<typeof accountSchema>;
 
 
+--- src/query/auth/mutations/useAccountMutation.ts ---
+import { useMutation } from "@tanstack/react-query";
+import { AccountRequest } from "@/types/auth.type";
+import { authApi } from "@/api/auth";
+import { useToast } from "@/components/ui/Toast/useToast";
+
+export function useAccountMutation() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: AccountRequest) => authApi.account(data),
+    onSuccess: () => {
+      toast({
+        title: "Account Login Success",
+        message: "Account Login Successfully Great!",
+        type: "success",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Account Login Failed",
+        message: `${error.message || "Account Login Failed Something went wrong!"}`,
+        type: "error",
+      });
+    },
+  });
+}
+
+
+--- src/query/auth/mutations/useLoginMutation.ts ---
+import { useMutation } from "@tanstack/react-query";
+import { LoginRequest } from "@/types/auth.type";
+import { signIn } from "next-auth/react";
+import { useToast } from "@/components/ui/Toast/useToast";
+
+export function useLoginMutation() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (data: LoginRequest) => {
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: true,
+        callbackUrl: "/",
+      });
+
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+    },
+    onSuccess: () => {
+      toast({
+        title: "Login Success",
+        message: "Login Successfully Great!",
+        type: "success",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Login Failed",
+        message: `${error.message || "Login Failed So Sad.."}`,
+        type: "error",
+      });
+    },
+  });
+}
+
+
+--- src/query/auth/mutations/useLogoutMutation.ts ---
+import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/Toast/useToast";
+import { signOut } from "next-auth/react";
+
+export function useLogoutMutation() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: () => signOut({ redirect: true, callbackUrl: "/login" }),
+    onSuccess: () => {
+      toast({
+        title: "Logout Success",
+        message: "Logout Successfully Great!",
+        type: "success",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Logout Failed",
+        message: `${error.message || "Logout Failed Stay Restored!"}`,
+        type: "error",
+      });
+    },
+  });
+}
+
+
+--- src/query/search/queries/useSearchQuery.ts ---
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { getSearchQueryKey } from "@/query/search/key";
+import { searchApi } from "@/api/search";
+import { SearchPanelParams } from "@/types/search.type";
+
+export type SearchQueryParams = SearchPanelParams & { text: string };
+
+export function useSearchQuery(params: SearchQueryParams) {
+  const { text, searchType, sort } = params;
+  const limit = 10;
+
+  return useInfiniteQuery({
+    queryKey: getSearchQueryKey(params),
+    queryFn: ({ pageParam = 1 }) =>
+      searchApi({
+        text,
+        searchType,
+        sort,
+        page: pageParam,
+        limit,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      const { total, page, limit } = lastPage.data;
+      const loadedItems = page * limit;
+
+      return loadedItems < total ? page + 1 : undefined;
+    },
+    enabled: text?.length > 0,
+  });
+}
+
+
+--- src/query/search/key.ts ---
+export const getSearchQueryKey = (params: {
+  text?: string;
+  searchType?: "both" | "artist" | "title" | "lyrics";
+  sort?: "latest" | "popular";
+}) => ["search", params.text, params.searchType, params.sort];
+
+
 --- src/types/auth.type.ts ---
 interface User {
   id: number;
   name: string;
   email: string;
+  profile_image_url: string | null;
 }
 
 export interface AccountRequest {
@@ -1288,6 +2113,48 @@ export interface RefreshResponse {
 }
 
 
+--- src/types/search.type.ts ---
+export type SearchType = "both" | "artist" | "title" | "lyrics";
+export type Sort = "latest" | "popular";
+
+export interface SearchRequest {
+  text?: string;
+  searchType?: SearchType;
+  sort?: Sort;
+  limit?: number;
+  page?: number;
+}
+
+export type SearchPanelParams = Omit<SearchRequest, "limit" | "page">;
+
+export interface SearchItems {
+  id: number;
+  song_id: number;
+  title_ko: string;
+  title_ja?: string;
+  title_en?: string;
+  artist_id: number;
+  release_date?: string;
+  thumbnail_url: string | null;
+  popularity_score: number;
+  created_at: string;
+  updated_at: string;
+  artist_ko?: string;
+  artist_ja?: string;
+  artist_en?: string;
+  romanized_ko?: string;
+  tj_number?: string;
+  kumyoung_number?: string;
+}
+
+export interface SearchResponse {
+  items: SearchItems[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+
 --- src/types/users.type.ts ---
 interface MeResponse {
   id: number;
@@ -1301,14 +2168,39 @@ interface MeResponse {
 type AllResponse = MeResponse[];
 
 
---- src/utils/applyTheme.ts ---
-type Theme = "light" | "dark";
+--- src/utils/getIsomorphicSession.ts ---
+import { getSession } from "next-auth/react";
+import { getServerSession, Session } from "next-auth";
+import { authOptions } from "@/lib/next-auth/nextAuth";
 
-export const applyTheme = (newTheme: Theme) => {
-  if (typeof document !== "undefined") {
-    document.documentElement.setAttribute("data-theme", newTheme);
-    localStorage.setItem("theme", newTheme);
-  }
+export const getIsomorphicSession = async (): Promise<Session | null> => {
+  return typeof window === "undefined" ? await getServerSession(authOptions) : await getSession();
 };
+
+
+--- src/utils/theme.ts ---
+"use server";
+
+import { cookies } from "next/headers";
+
+export type Theme = "light" | "dark";
+
+export async function setTheme(theme: Theme) {
+  const cookieStore = await cookies();
+
+  cookieStore.set({
+    name: "theme",
+    value: theme,
+    httpOnly: true,
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365, // 1년
+  });
+}
+
+export async function getTheme(): Promise<Theme> {
+  const cookieStore = await cookies();
+  const theme = cookieStore.get("theme")?.value as Theme;
+  return theme === "dark" ? "dark" : "light";
+}
 
 

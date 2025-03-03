@@ -23,7 +23,7 @@ function Button({
   asChild = false,
   ...props
 }: ButtonProps) {
-  const buttonStyles = `${className || ""} ${styles[variant]} hover:brightness-90 hover:shadow-md flex justify-center items-center bg-button-active text-text-h h-12 w-full rounded-xl text-base font-semibold transition-all duration-200`;
+  const buttonStyles = `${className || ""} ${styles[variant]} button-hover flex justify-center items-center bg-button-active text-text-h h-12 w-full rounded-xl text-base font-semibold transition-all duration-200`;
 
   if (asChild && React.isValidElement(children)) {
     const childProps = children.props as any;
