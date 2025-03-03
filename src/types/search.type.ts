@@ -1,3 +1,5 @@
+import { StaticImageData } from "next/image";
+
 export type SearchType = "both" | "artist" | "title" | "lyrics";
 export type Sort = "latest" | "popular";
 
@@ -19,7 +21,7 @@ export interface SearchItems {
   title_en?: string;
   artist_id: number;
   release_date?: string;
-  thumbnail_url: string | null;
+  thumbnail_url: StaticImageData;
   popularity_score: number;
   created_at: string;
   updated_at: string;
