@@ -4,7 +4,7 @@ import errorImage from "@/assets/images/src_error.png";
 import notFoundImage from "@/assets/images/src_notfound.png";
 
 interface PictureProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src"> {
-  src: StaticImageData | string;
+  src?: StaticImageData | string;
   fallbackSrc?: StaticImageData | string;
   width?: number;
   height?: number;
