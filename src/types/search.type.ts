@@ -21,7 +21,7 @@ export interface SearchItems {
   title_en?: string;
   artist_id: number;
   release_date?: string;
-  thumbnail_url: StaticImageData;
+  thumbnail_url: StaticImageData | null;
   popularity_score: number;
   created_at: string;
   updated_at: string;

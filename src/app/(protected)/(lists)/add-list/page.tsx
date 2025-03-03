@@ -2,7 +2,7 @@
 
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { favoriteListsOption } from "@/query/favorite-lists/options/favoriteListsOption";
-import FavoriteList from "@/app/(protected)/(myList)/_components/FavoriteList";
+import FavoriteLists from "../_components/FavoriteLists";
 import { getServerQueryClient } from "@/lib/tanStackQuery/getServerQueryClient";
 
 async function AddListPage() {
@@ -11,12 +11,11 @@ async function AddListPage() {
   await queryClient.prefetchQuery(favoriteListsOption);
 
   return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <div>
-        <h1>에드온</h1>
-        <FavoriteList />
-      </div>
-    </HydrationBoundary>
+    <div>
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <FavoriteLists />
+      </HydrationBoundary>
+    </div>
   );
 }
 

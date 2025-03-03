@@ -2498,7 +2498,7 @@ export interface RefreshResponse {
 --- src/types/favorite-list.type.ts ---
 import { StaticImageData } from "next/image";
 
-export interface FavoriteList {
+export interface FavoriteLists {
   id: number;
   user_id: number;
   name: string;
@@ -2550,15 +2550,15 @@ export interface ReorderSongRequest {
   newOrder: number;
 }
 
-export type GetFavoriteListsResponse = FavoriteList[];
+export type GetFavoriteListsResponse = FavoriteLists[];
 
 export interface GetFavoriteListSongsResponse {
   items: FavoriteListSong[];
 }
 
-export type CreateFavoriteListResponse = FavoriteList;
+export type CreateFavoriteListResponse = FavoriteLists;
 
-export type UpdateFavoriteListResponse = FavoriteList;
+export type UpdateFavoriteListResponse = FavoriteLists;
 
 export interface DeleteFavoriteListResponse {
   message: string;
