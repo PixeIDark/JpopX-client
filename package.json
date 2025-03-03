@@ -24,6 +24,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.0",
     "@eslint/js": "^9.21.0",
     "@next/eslint-plugin-next": "^15.2.0",
     "@svgr/webpack": "^8.1.0",
