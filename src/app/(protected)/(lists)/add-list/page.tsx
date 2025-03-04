@@ -1,21 +1,24 @@
-"use server";
+"use client";
 
-import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { favoriteListsOption } from "@/query/favorite-lists/options/favoriteListsOption";
-import FavoriteLists from "../_components/FavoriteLists";
-import { getServerQueryClient } from "@/lib/tanStackQuery/getServerQueryClient";
+import FavoriteList from "@/app/(protected)/(lists)/_components/FavoriteLists/FavoriteList";
+import FuckAccessToken from "@/app/_components/test/FuckAccessToken";
+import GetMe from "@/app/_components/test/GetMe";
 
-async function AddListPage() {
-  const queryClient = getServerQueryClient();
+function AddListPage() {
+  const { data: lists } = useQuery(favoriteListsOption);
 
-  await queryClient.prefetchQuery(favoriteListsOption);
+  if (!lists) return null;
 
   return (
-    <div>
-      <HydrationBoundary state={dehydrate(queryClient)}>
-        <FavoriteLists />
-      </HydrationBoundary>
-    </div>
+    <li className="flex flex-col gap-4">
+      {lists.map((list) => (
+        <FavoriteList key={list.id} list={list} />
+      ))}
+      <FuckAccessToken />
+      <GetMe />
+    </li>
   );
 }
 
