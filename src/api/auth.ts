@@ -29,20 +29,20 @@ export const authApi = {
       console.error("Server Logout Failed:", error);
     }
   },
-  refresh: async (refreshToken: RefreshRequest): Promise<RefreshResponse> => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/${url}/refresh`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({ refreshToken }),
-    });
+  refresh: async (refreshToken: RefreshRequest): Promise<RefreshResponse | undefined> => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/${url}/refresh`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+      return response.json();
+    } catch (error) {
+      console.error("Server Refresh Failed:", error);
     }
-
-    return response.json();
   },
 };

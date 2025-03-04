@@ -1,11 +1,12 @@
 import Button from "@/components/ui/Button";
-import { getSession, signOut } from "next-auth/react";
+import { getSession } from "next-auth/react";
+import { signOutAction } from "@/lib/next-auth/nextAuthActions";
 
 function LogoutMe() {
   const a = async () => {
     let session = await getSession();
     console.log(session);
-    await signOut({ redirect: false });
+    await signOutAction();
     session = await getSession();
     console.log(session);
   };

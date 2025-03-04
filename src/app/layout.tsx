@@ -2,15 +2,14 @@ import React from "react";
 import "./globals.css";
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
-import { getServerSession } from "next-auth";
 import SessionProvider from "@/app/_providers/SessionProvider";
 import QueryProvider from "@/app/_providers/QueryProvider";
 import TopNav from "@/app/_components/layout/TopNav";
 import BottomNav from "@/app/_components/layout/BottomNav";
-import { authOptions } from "@/lib/next-auth/nextAuth";
 import ToastProvider from "@/components/ui/Toast/ToastContext";
 import { ScrollPositionProvider } from "@/app/_providers/ScrollPositionProvider";
 import { getTheme } from "@/utils/theme";
+import { auth } from "@/auth";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -29,7 +28,7 @@ async function RootLayout({
   children: React.ReactNode;
 }>) {
   const theme = await getTheme();
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   return (
     <html lang="ko" data-theme={theme} suppressHydrationWarning>

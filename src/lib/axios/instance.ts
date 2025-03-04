@@ -1,6 +1,4 @@
 import axios from "axios";
-import { signIn, signOut } from "next-auth/react";
-import { authApi } from "@/api/auth";
 import { getIsomorphicSession } from "@/utils/getIsomorphicSession";
 
 export const axiosInstance = axios.create({
@@ -32,49 +30,87 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-const MAX_RETRIES = 3;
+if (typeof window !== "undefined") {
+  const MAX_RETRIES = 3;
 
-axiosInstance.interceptors.response.use(
-  function (response) {
-    return response;
-  },
-  async function (error) {
-    const originalRequest = error.config;
+  axiosInstance.interceptors.response.use(
+    function (response) {
+      return response;
+    },
+    async function (error) {
+      const originalRequest = error.config;
 
-    if (originalRequest._retry >= MAX_RETRIES) {
-      await signOut({ redirect: true, callbackUrl: "/login" });
+      if (originalRequest._retry >= MAX_RETRIES) {
+        const response = await fetch("/api/auth/signOut", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await response.json();
+
+        if (data.redirect) {
+          window.location.href = data.redirect;
+          return new Promise(() => {});
+        }
+        return Promise.reject(error);
+      }
+
+      if (error.response && error.response.status === 401) {
+        originalRequest._retry ??= 1;
+        originalRequest._retry++;
+
+        try {
+          const session = await getIsomorphicSession();
+
+          if (!session?.user?.refreshToken) {
+            const response = await fetch("/api/auth/signOut", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            });
+            const data = await response.json();
+
+            if (data.redirect) {
+              window.location.href = data.redirect;
+              return new Promise(() => {});
+            }
+            return Promise.reject(error);
+          }
+
+          const response = await fetch("/api/auth/refresh", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ refreshToken: session.user.refreshToken }),
+          });
+
+          const data = await response.json();
+
+          await fetch("/api/auth/update", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              user: {
+                accessToken: data.accessToken,
+                refreshToken: data.refreshToken,
+              },
+            }),
+          });
+
+          originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+          return axiosInstance(originalRequest);
+        } catch (refreshError) {
+          console.error(`Failed Intercepting (${originalRequest._retry}th):`, refreshError);
+          return Promise.reject(refreshError);
+        }
+      }
+
       return Promise.reject(error);
     }
-
-    if (error.response && error.response.status === 401) {
-      originalRequest._retry ??= 1;
-      originalRequest._retry++;
-
-      try {
-        const session = await getIsomorphicSession();
-
-        if (!session?.user?.refreshToken) {
-          await signOut({ redirect: true, callbackUrl: "/login" });
-          return Promise.reject(error);
-        }
-
-        const refreshToken = session.user.refreshToken;
-        const data = await authApi.refresh(refreshToken);
-        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
-
-        await signIn("Refresh", {
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
-          redirect: false,
-        });
-
-        return axiosInstance(originalRequest);
-      } catch (refreshError) {
-        console.error(`${originalRequest._retry}th Failed:`, refreshError);
-        return Promise.reject(refreshError);
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
+  );
+}

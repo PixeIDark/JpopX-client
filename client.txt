@@ -1864,7 +1864,7 @@ axiosInstance.interceptors.response.use(
 );
 
 
---- src/lib/next-auth/nextAuth.ts ---
+--- src/lib/next-auth/nextAuthConfig.ts ---
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { authApi } from "@/api/auth";

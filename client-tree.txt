@@ -145,7 +145,7 @@ src
 │   ├── axios
 │   │   └── instance.ts
 │   ├── next-auth
-│   │   ├── nextAuth.ts
+│   │   ├── nextAuthConfig.ts
 │   │   └── nextAuth.type.d.ts
 │   └── zod
 │       └── auth.ts

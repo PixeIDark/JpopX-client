@@ -1,7 +1,7 @@
 import { getSession } from "next-auth/react";
-import { getServerSession, Session } from "next-auth";
-import { authOptions } from "@/lib/next-auth/nextAuth";
+import { Session } from "next-auth";
+import { auth } from "@/auth";
 
 export const getIsomorphicSession = async (): Promise<Session | null> => {
-  return typeof window === "undefined" ? await getServerSession(authOptions) : await getSession();
+  return typeof window === "undefined" ? await auth() : await getSession();
 };

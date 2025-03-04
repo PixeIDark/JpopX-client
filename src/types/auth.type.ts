@@ -1,8 +1,10 @@
+import { StaticImageData } from "next/image";
+
 interface User {
   id: number;
   name: string;
   email: string;
-  profile_image_url: string | null;
+  profile_image_url: StaticImageData | null;
 }
 
 export interface AccountRequest {
