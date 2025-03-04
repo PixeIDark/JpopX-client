@@ -8,13 +8,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Refresh token is required" }, { status: 400 });
     }
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ refreshToken }),
-    });
+    const response = await fetch(
+      `https://port-0-minchelin-server-m3txb03taca4f465.sel4.cloudtype.app/auth/refresh`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refreshToken }),
+      }
+    );
 
     const data = await response.json();
 

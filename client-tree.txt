@@ -19,8 +19,18 @@ src
 │   │       │       └── index.ts
 │   │       └── page.tsx
 │   ├── (protected)
-│   │   └── add-list
-│   │       └── page.tsx
+│   │   └── (lists)
+│   │       ├── _components
+│   │       │   └── FavoriteLists
+│   │       │       ├── FavoriteList
+│   │       │       │   ├── FavoriteList.tsx
+│   │       │       │   └── index.ts
+│   │       │       ├── FavoriteLists.tsx
+│   │       │       └── index.ts
+│   │       ├── add-list
+│   │       │   └── page.tsx
+│   │       ├── layout.tsx
+│   │       └── mylist
 │   ├── (public)
 │   │   ├── page.tsx
 │   │   └── search
@@ -73,7 +83,13 @@ src
 │   │   └── SessionProvider.tsx
 │   ├── api
 │   │   └── auth
-│   │       └── [...nextauth]
+│   │       ├── [...nextauth]
+│   │       │   └── route.ts
+│   │       ├── refresh
+│   │       │   └── route.ts
+│   │       ├── signOut
+│   │       │   └── route.ts
+│   │       └── update
 │   │           └── route.ts
 │   ├── favicon.ico
 │   ├── globals.css
@@ -94,6 +110,7 @@ src
 │   └── images
 │       ├── src_error.png
 │       └── src_notfound.png
+├── auth.ts
 ├── components
 │   ├── common
 │   │   ├── Field
@@ -145,8 +162,12 @@ src
 │   ├── axios
 │   │   └── instance.ts
 │   ├── next-auth
-│   │   ├── nextAuthConfig.ts
-│   │   └── nextAuth.type.d.ts
+│   │   ├── nextAuth.type.d.ts
+│   │   ├── nextAuthActions.ts
+│   │   └── nextAuthConfig.ts
+│   ├── tanStackQuery
+│   │   ├── getServerQueryClient.ts
+│   │   └── queryConfig.ts
 │   └── zod
 │       └── auth.ts
 ├── query
@@ -166,6 +187,8 @@ src
 │   │   │   ├── useReorderFavoriteList.ts
 │   │   │   ├── useReorderSongMutation.ts
 │   │   │   └── useUpdateFavoriteListMutation.ts
+│   │   ├── options
+│   │   │   └── favoriteListsOption.ts
 │   │   └── queries
 │   │       ├── useFavoriteListSongsQuery.ts
 │   │       └── useFavoriteListsQuery.ts
@@ -183,4 +206,4 @@ src
     ├── getIsomorphicSession.ts
     └── theme.ts
 
-72 directories, 112 files
+82 directories, 125 files
