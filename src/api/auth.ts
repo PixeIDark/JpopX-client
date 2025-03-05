@@ -26,23 +26,25 @@ export const authApi = {
         },
       });
     } catch (error) {
-      console.error("Server Logout Failed:", error);
+      console.error(error);
+      return Promise.reject(error);
     }
   },
   refresh: async (refreshToken: RefreshRequest): Promise<RefreshResponse> => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/${url}/refresh`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({ refreshToken }),
-    });
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/${url}/refresh`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+      return response.json();
+    } catch (error) {
+      console.error(error);
+      return Promise.reject(error);
     }
-
-    return response.json();
   },
 };
