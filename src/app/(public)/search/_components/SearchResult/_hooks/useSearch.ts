@@ -21,7 +21,7 @@ export function useSearch(params: SearchQueryParams) {
     rootMargin: "20%",
   });
 
-  const searchTotal = data?.pages[0].total || 0;
+  const searchTotal = data?.pages[0]?.total || 0;
   const songs = data?.pages.flatMap((page) => page.items) || [];
 
   return {
