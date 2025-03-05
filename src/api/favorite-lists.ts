@@ -57,11 +57,16 @@ export const favoriteListsApi = {
   },
 
   addSongToList: async (listId: number, data: AddSongToListRequest) => {
-    const response = await axiosInstance.post<AddSongToListResponse>(
-      `${url}/lists/${listId}/songs`,
-      data
-    );
-    return response.data;
+    try {
+      const response = await axiosInstance.post<AddSongToListResponse>(
+        `${url}/lists/${listId}/songs`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      console.error(error);
+      return Promise.reject(error);
+    }
   },
 
   removeSongFromList: async (favoriteId: number) => {
