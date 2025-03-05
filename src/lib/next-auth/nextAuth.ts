@@ -102,7 +102,7 @@ export const authOptions: NextAuthOptions = {
   },
   // pages: {
   //   signIn: "/login",
-  //   error: "/login",
+  //   signOut: "/login?toast=true",
   // },
   secret: process.env.NEXTAUTH_SECRET,
 };
