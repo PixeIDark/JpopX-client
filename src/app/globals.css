@@ -21,6 +21,9 @@
     --color-icon-stroke: #4F6696;
     --color-icon-bg: #0D121C;
     --color-solid-default: #D1D6E8;
+    --color-scrollbar-track: #D1D6E8;
+    --color-scrollbar-thumb: #94A6C7;
+    --color-scrollbar-hover: #4F6696;
 }
 
 :root[data-theme="dark"] {
@@ -40,6 +43,27 @@
     --color-icon-stroke: #94A6C7;
     --color-icon-bg: #FFFFFF;
     --color-solid-default: #334566;
+    --color-scrollbar-track: #334566;
+    --color-scrollbar-thumb: #4F6696;
+    --color-scrollbar-hover: #94A6C7;
+}
+
+*::-webkit-scrollbar {
+    width: 4px;
+}
+
+*::-webkit-scrollbar-track {
+    background: var(--color-scrollbar-track);
+    border-radius: 16px;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--color-scrollbar-thumb);
+    border-radius: 16px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--color-scrollbar-hover)
 }
 
 .button-hover:hover {

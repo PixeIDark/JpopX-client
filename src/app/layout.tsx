@@ -11,6 +11,7 @@ import { authOptions } from "@/lib/next-auth/nextAuth";
 import ToastProvider from "@/components/ui/Toast/ToastContext";
 import { ScrollPositionProvider } from "@/app/_providers/ScrollPositionProvider";
 import { getTheme } from "@/utils/theme";
+import Main from "@/app/_components/layout/Main";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -40,7 +41,7 @@ async function RootLayout({
               <ScrollPositionProvider>
                 <div className="flex h-screen flex-col">
                   <TopNav currentTheme={theme} />
-                  <main className="overflow-y-auto px-4">{children}</main>
+                  <Main>{children}</Main>
                   <BottomNav />
                 </div>
               </ScrollPositionProvider>
