@@ -9,11 +9,11 @@ export function useRemoveSongFromListMutation(listId: number) {
 
   return useMutation({
     mutationFn: (favoriteId: number) => favoriteListsApi.removeSongFromList(favoriteId),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: getFavoriteListSongsKey(listId) });
       toast({
         title: "Song Removed From List Successfully",
-        message: "Song Removed From List Successfully",
+        message: data.message,
         type: "success",
       });
     },
