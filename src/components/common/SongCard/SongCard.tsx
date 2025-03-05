@@ -39,7 +39,7 @@ function SongCard({ song }: SongCardProps) {
         </div>
       </div>
       <Button variant="ghost" className="h-8 min-w-20 max-w-20 text-sm font-medium" asChild>
-        <Link href="/add-list">Add</Link>
+        <Link href={`/add-list/${song.song_id}`}>Add</Link>
       </Button>
     </ul>
   );
