@@ -18,7 +18,7 @@ function CreateListButton() {
           <form onClick={handleSubmit} className="flex flex-col gap-4">
             <h1 className="text-center">List Name</h1>
             <Input ref={inputRef} type="text" placeholder="Please Write" />
-            <Button variant="active" className="mx-auto h-[40] w-32">
+            <Button variant="active" className="mx-auto h-[40] w-20">
               Create
             </Button>
           </form>

@@ -19,12 +19,11 @@ const useDialogContext = () => useContext(DialogContext);
 
 interface DialogProps {
   children: React.ReactNode;
-  className?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
-function Dialog({ children, className, open, onOpenChange, ...props }: DialogProps) {
+function Dialog({ children, open, onOpenChange }: DialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
 
   const isControlled = open !== undefined;
@@ -56,11 +55,7 @@ function Dialog({ children, className, open, onOpenChange, ...props }: DialogPro
     onClose: handleClose,
   };
 
-  return (
-    <div className={className} {...props}>
-      <DialogContext.Provider value={value}>{children}</DialogContext.Provider>
-    </div>
-  );
+  return <DialogContext.Provider value={value}>{children}</DialogContext.Provider>;
 }
 
 interface TriggerProps {

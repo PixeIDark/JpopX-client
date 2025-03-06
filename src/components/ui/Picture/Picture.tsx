@@ -1,30 +1,30 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import { StaticImageData } from "next/image";
 import errorImage from "@/assets/images/src_error.png";
 import notFoundImage from "@/assets/images/src_notfound.png";
 
 interface PictureProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src"> {
   src?: StaticImageData | string | null;
-  fallbackSrc?: StaticImageData | string;
+  fallbackSrc?: StaticImageData;
   width?: number;
   height?: number;
 }
 
 function Picture({ src, alt, fallbackSrc = errorImage, width, height, ...props }: PictureProps) {
-  const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    e.currentTarget.src = typeof fallbackSrc === "string" ? fallbackSrc : fallbackSrc.src;
-  };
+  const [currentSrc, setCurrentSrc] = useState<string>(() => {
+    if (!src) return notFoundImage.src;
+    return typeof src === "string" ? src : src.src;
+  });
 
-  let imgSrc: string;
-  if (!src) {
-    imgSrc = typeof notFoundImage === "string" ? notFoundImage : notFoundImage.src;
-  } else {
-    imgSrc = typeof src === "string" ? src : src.src;
-  }
+  const handleError = () => {
+    setCurrentSrc(fallbackSrc.src);
+  };
 
   return (
     <img
-      src={imgSrc}
+      src={currentSrc}
       alt={alt}
       onError={handleError}
       loading="lazy"

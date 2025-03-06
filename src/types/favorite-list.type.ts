@@ -34,7 +34,8 @@ export interface CreateFavoriteListRequest {
 }
 
 export interface UpdateFavoriteListRequest {
-  name: string;
+  name?: string;
+  image_url?: string;
 }
 
 export interface AddSongToListRequest {
