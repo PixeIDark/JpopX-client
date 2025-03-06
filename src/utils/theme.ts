@@ -12,7 +12,7 @@ export async function setTheme(theme: Theme) {
     value: theme,
     httpOnly: true,
     path: "/",
-    maxAge: 60 * 60 * 24 * 365, // 1년
+    maxAge: 60 * 60 * 24 * 365,
   });
 }
 
