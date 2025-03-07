@@ -41,7 +41,7 @@ function FavoriteList({ list, dragAndDropHandler, index }: FavoriteListProps) {
       <Link
         href={`/mylist/${list.id}`}
         className="flex w-full items-center justify-between py-2"
-        onClick={(e) => isDragging && e.preventDefault()} // 드래그 중에는 링크 클릭 방지
+        onClick={(e) => isDragging && e.preventDefault()}
       >
         <div className="flex items-center gap-4">
           <Picture
