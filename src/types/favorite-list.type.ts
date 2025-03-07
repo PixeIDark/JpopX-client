@@ -55,9 +55,7 @@ export interface ReorderSongRequest {
 
 export type GetFavoriteListsResponse = FavoriteList[];
 
-export interface GetFavoriteListSongsResponse {
-  items: FavoriteListSong[];
-}
+export type GetFavoriteListSongsResponse = FavoriteListSong[];
 
 export type CreateFavoriteListResponse = FavoriteList;
 
