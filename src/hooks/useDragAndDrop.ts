@@ -13,17 +13,17 @@ export function useDragAndDrop<T>(mutate: UseMutateFunction<any, Error, T, unkno
 
   const handleDragEnter = (order: number) => (dragEndIndex.current = order);
 
-  const handleDragEnd = (userId?: number) => {
+  const handleDragEnd = (userId: number) => {
     if (draggedItemId && dragStartIndex.current !== null && dragEndIndex.current !== null) {
       if (dragStartIndex.current !== dragEndIndex.current) {
         const mutateData: any = {
-          listId: draggedItemId,
           newOrder: dragEndIndex.current,
         };
 
-        if (userId !== undefined) {
+        if (userId !== -1) {
           mutateData.userId = userId;
-        }
+          mutateData.listId = draggedItemId;
+        } else mutateData.favoriteId = draggedItemId;
 
         mutate(mutateData);
       }
