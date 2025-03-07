@@ -7,29 +7,42 @@ import ListControlled from "@/app/(protected)/(lists)/mylist/_components/Favorit
 import React from "react";
 
 interface DragAndDropHandler {
-  handleDragStart: (id: number) => void;
+  draggedItemId: number | null;
+  handleDragStart: (id: number, order: number) => void;
   handleDragEnter: (order: number) => void;
   handleDragEnd: (userId: number) => void;
-  handleDragOver: (e: { preventDefault: () => void }) => void;
+  handleDragOver: (e: React.DragEvent) => void;
 }
 
 interface FavoriteListProps {
   list: List;
   dragAndDropHandler: DragAndDropHandler;
+  index: number;
 }
 
-function FavoriteList({ list, dragAndDropHandler }: FavoriteListProps) {
-  const { handleDragEnter, handleDragOver, handleDragStart, handleDragEnd } = dragAndDropHandler;
+function FavoriteList({ list, dragAndDropHandler, index }: FavoriteListProps) {
+  const { draggedItemId, handleDragEnter, handleDragOver, handleDragStart, handleDragEnd } =
+    dragAndDropHandler;
+
+  const isDragging = draggedItemId === list.id;
 
   return (
     <div
-      onDragStart={() => handleDragStart(list.id)}
+      draggable={true}
+      onDragStart={() => handleDragStart(list.id, list.order)}
       onDragEnter={() => handleDragEnter(list.order)}
       onDragEnd={() => handleDragEnd(list.user_id)}
       onDragOver={handleDragOver}
-      className="flex items-center justify-between"
+      className={`flex items-center justify-between transition-colors duration-200 ${isDragging ? "bg-button-ghost opacity-50" : ""} ${draggedItemId !== null && !isDragging ? "border-t-2 border-dashed border-solid-default" : ""} `}
+      data-id={list.id}
+      data-order={list.order}
+      data-index={index}
     >
-      <Link href={`/mylist/${list.id}`} className="flex w-full items-center justify-between py-2">
+      <Link
+        href={`/mylist/${list.id}`}
+        className="flex w-full items-center justify-between py-2"
+        onClick={(e) => isDragging && e.preventDefault()} // 드래그 중에는 링크 클릭 방지
+      >
         <div className="flex items-center gap-4">
           <Picture
             src={list.image_url}
@@ -38,7 +51,7 @@ function FavoriteList({ list, dragAndDropHandler }: FavoriteListProps) {
             height={56}
             className="rounded-lg"
           />
-          <div className="a flex flex-col justify-center">
+          <div className="flex flex-col justify-center">
             <h1 className="text-left text-base text-text-h">{list.name}</h1>
             <p className="text-sm text-text-p">{list.updated_at}</p>
           </div>

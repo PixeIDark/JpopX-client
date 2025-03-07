@@ -1,41 +1,49 @@
-import { useMemo, useRef } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { UseMutateFunction } from "@tanstack/react-query";
 
 export function useDragAndDrop<T>(mutate: UseMutateFunction<any, Error, T, unknown>) {
-  const dragId = useRef<null | number>(null);
-  const dragOrder = useRef<null | number>(null);
+  const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
+  const dragStartIndex = useRef<number | null>(null);
+  const dragEndIndex = useRef<number | null>(null);
 
-  const handleDragStart = (id: number) => (dragId.current = id);
-
-  const handleDragEnter = (order: number) => (dragOrder.current = order);
-
-  const handleDragEnd = (userId?: number) => {
-    if (dragId.current && dragOrder.current) {
-      const mutateData: any = {
-        listId: dragId.current,
-        newOrder: dragOrder.current,
-      };
-
-      if (userId !== undefined) {
-        mutateData.userId = userId;
-      }
-
-      mutate(mutateData);
-    }
-
-    dragId.current = null;
-    dragOrder.current = null;
+  const handleDragStart = (id: number, currentOrder: number) => {
+    setDraggedItemId(id);
+    dragStartIndex.current = currentOrder;
   };
 
-  const handleDragOver = (e: { preventDefault: () => void }) => e.preventDefault();
+  const handleDragEnter = (order: number) => (dragEndIndex.current = order);
+
+  const handleDragEnd = (userId?: number) => {
+    if (draggedItemId && dragStartIndex.current !== null && dragEndIndex.current !== null) {
+      if (dragStartIndex.current !== dragEndIndex.current) {
+        const mutateData: any = {
+          listId: draggedItemId,
+          newOrder: dragEndIndex.current,
+        };
+
+        if (userId !== undefined) {
+          mutateData.userId = userId;
+        }
+
+        mutate(mutateData);
+      }
+    }
+
+    setDraggedItemId(null);
+    dragStartIndex.current = null;
+    dragEndIndex.current = null;
+  };
+
+  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
 
   return useMemo(
     () => ({
+      draggedItemId,
       handleDragStart,
       handleDragEnter,
       handleDragEnd,
       handleDragOver,
     }),
-    []
+    [draggedItemId, mutate]
   );
 }

@@ -15,8 +15,13 @@ function MyListPage() {
 
   return (
     <div>
-      {lists.map((list) => (
-        <FavoriteList key={list.id} list={list} dragAndDropHandler={dragAndDropHandler} />
+      {lists.map((list, index) => (
+        <FavoriteList
+          key={list.id}
+          list={list}
+          index={index}
+          dragAndDropHandler={dragAndDropHandler}
+        />
       ))}
     </div>
   );
