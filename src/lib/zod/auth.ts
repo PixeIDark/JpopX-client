@@ -25,5 +25,21 @@ export const accountSchema = z
     path: ["passwordConfirm"],
   });
 
+export const validateSchema = z.object({
+  password,
+});
+
+export const nameSchema = z.object({
+  name: name,
+});
+
+export const passwordSchema = z.object({
+  password,
+  passwordConfirm,
+});
+
 export type LoginSchema = z.infer<typeof loginSchema>;
 export type AccountSchema = z.infer<typeof accountSchema>;
+export type ValidateSchema = z.infer<typeof validateSchema>;
+export type NameSchema = z.infer<typeof nameSchema>;
+export type PasswordSchema = z.infer<typeof passwordSchema>;
