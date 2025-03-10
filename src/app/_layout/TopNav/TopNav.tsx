@@ -11,10 +11,9 @@ const NAV_TITLE = {
   "/account": "Account",
   "/search": "Search",
   "/add-list": "Add List",
-  "/mylist": "My List",
+  "/mylist": "MyList",
+  "/profile": "Profile",
 } as const;
-
-type NavPath = keyof typeof NAV_TITLE;
 
 interface TopNavProps {
   currentTheme: "light" | "dark";
@@ -24,8 +23,10 @@ function TopNav({ currentTheme }: TopNavProps) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const purePath = "/" + pathname.split("/")[1];
-  const title = purePath in NAV_TITLE ? NAV_TITLE[purePath as NavPath] : "Unknown Page";
+  const title =
+    NAV_TITLE[pathname as keyof typeof NAV_TITLE] ||
+    NAV_TITLE[`/${pathname.split("/")[1]}` as keyof typeof NAV_TITLE] ||
+    "Unknown Page";
 
   return (
     <div className="pt sticky top-0 flex items-center justify-between bg-body-default px-4 pb-3 pt-5">
