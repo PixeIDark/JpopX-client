@@ -21,7 +21,7 @@ export function useLoginMutation() {
       }
     },
     onSuccess: () => {
-      router.back();
+      router.push("/");
       toast({
         title: "Login Success",
         message: "Login Successfully Great!",
