@@ -5,7 +5,7 @@ export interface FavoriteList {
   user_id: number;
   name: string;
   order: number;
-  image_url: StaticImageData | null;
+  image_url: StaticImageData | string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -35,7 +35,7 @@ export interface CreateFavoriteListRequest {
 
 export interface UpdateFavoriteListRequest {
   name?: string;
-  image_url?: string;
+  image_url?: string | StaticImageData | null;
 }
 
 export interface AddSongToListRequest {

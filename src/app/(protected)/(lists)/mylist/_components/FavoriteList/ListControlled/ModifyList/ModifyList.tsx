@@ -1,26 +1,25 @@
-import React, { useRef } from "react";
+import React from "react";
 import Dialog from "@/components/ui/Dialog";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import { useUpdateFavoriteListMutation } from "@/query/favorite-lists";
+import { StaticImageData } from "next/image";
+import Picture from "@/components/ui/Picture";
+import { useModifyList } from "@/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled/ModifyList/_hooks/useModifyList";
 
 interface ModifyListProps {
   listId: number;
+  listName: string;
+  image: StaticImageData | string | null;
+  onClose: () => void;
 }
 
-function ModifyList({ listId }: ModifyListProps) {
-  const { mutate: updateFavoriteList } = useUpdateFavoriteListMutation(listId);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleChangeName = () => {
-    const name = inputRef.current?.value;
-    if (name && name.length) {
-      updateFavoriteList({ name });
-      if (inputRef.current) {
-        inputRef.current.value = "";
-      }
-    }
-  };
+function ModifyList({ listId, image, listName, onClose }: ModifyListProps) {
+  const { handleImageClick, handleFileChange, handleSubmit, previewUrl, fileInputRef, inputRef } =
+    useModifyList({
+      listId,
+      image,
+      onClose,
+    });
 
   return (
     <Dialog>
@@ -28,11 +27,26 @@ function ModifyList({ listId }: ModifyListProps) {
         <Button variant="link">Modify</Button>
       </Dialog.Trigger>
       <Dialog.Content>
-        <form onSubmit={handleChangeName} className="flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <h1 className="mx-auto">Change List</h1>
-          <Input ref={inputRef} type="text" placeholder="New List Name" />
-          <Button onClick={handleChangeName} variant="active">
-            Change Name
+          <button type="button" className="mx-auto" onClick={handleImageClick}>
+            <Picture
+              src={previewUrl || image}
+              alt="리스트 이미지"
+              className="h-[200] w-[200] rounded-lg"
+            />
+            <p className="text-text-p">이미지 변경</p>
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept="image/*"
+            onChange={handleFileChange}
+          />
+          <Input ref={inputRef} type="text" defaultValue={listName} />
+          <Button type="submit" variant="active">
+            Save
           </Button>
         </form>
       </Dialog.Content>
