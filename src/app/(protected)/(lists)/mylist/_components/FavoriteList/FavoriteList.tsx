@@ -5,6 +5,7 @@ import Picture from "@/components/ui/Picture";
 import Link from "next/link";
 import ListControlled from "@/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled";
 import React from "react";
+import { getTimeAgo } from "@/utils/getTimeAgo";
 
 interface DragAndDropHandler {
   draggedItemId: number | null;
@@ -25,6 +26,7 @@ function FavoriteList({ list, dragAndDropHandler, index }: FavoriteListProps) {
     dragAndDropHandler;
 
   const isDragging = draggedItemId === list.id;
+  const updatedTime = getTimeAgo(list.updated_at);
 
   return (
     <div
@@ -47,17 +49,15 @@ function FavoriteList({ list, dragAndDropHandler, index }: FavoriteListProps) {
           <Picture
             src={list.image_url}
             alt={`${list.name}'s image`}
-            width={56}
-            height={56}
-            className="rounded-lg"
+            className="h-14 w-14 rounded-lg"
           />
           <div className="flex flex-col justify-center">
             <h1 className="text-left text-base text-text-h">{list.name}</h1>
-            <p className="text-sm text-text-p">{list.updated_at}</p>
+            <p className="text-sm text-text-p">{updatedTime}</p>
           </div>
         </div>
       </Link>
-      <ListControlled listId={list.id} />
+      <ListControlled listId={list.id} image={list.image_url} listName={list.name} />
     </div>
   );
 }
