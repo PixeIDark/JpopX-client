@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { createPortal } from "react-dom";
 
 type DialogContextType = {
   isOpen: boolean;
@@ -106,7 +105,7 @@ function Content({ children, className }: ContentProps) {
     }
   };
 
-  return createPortal(
+  return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
       onClick={handleOutClose}
@@ -117,8 +116,7 @@ function Content({ children, className }: ContentProps) {
           <X className="stroke-icon-stroke" />
         </button>
       </div>
-    </div>,
-    document.body
+    </div>
   );
 }
 
