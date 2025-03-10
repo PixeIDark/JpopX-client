@@ -2,11 +2,11 @@
 
 import React from "react";
 import { useSession } from "next-auth/react";
-import Picture from "@/components/ui/Picture";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import { useLogoutMutation } from "@/query/auth/mutations/useLogoutMutation";
 import { useDeleteAccountMutation } from "@/query/users/mutations/useDeleteAccountMutation";
+import ProfileImage from "@/app/(protected)/profile/_components/ProfileImage";
 
 function ProfilePage() {
   const { data: userData } = useSession();
@@ -15,13 +15,11 @@ function ProfilePage() {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 py-4">
-        <button>
-          <Picture className="h-32 w-32 rounded-full" />
-        </button>
+      <div className="flex flex-col gap-4 py-4">
+        <ProfileImage />
         <div>
-          <h1 className="text-text-h">{userData?.user.name}</h1>
-          <p className="text-text-p">{userData?.user.email}</p>
+          <h1 className="text-xl font-medium text-text-h">{userData?.user.name}</h1>
+          <p className="font-light text-text-p">{userData?.user.email}</p>
         </div>
       </div>
       <div className="flex flex-col gap-3">
