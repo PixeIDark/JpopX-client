@@ -18,9 +18,12 @@ interface SongCardProps {
 }
 
 function FavoriteSongCard({ song, listId, dragAndDropHandler }: SongCardProps) {
-  const { handleDragEnter, handleDragOver, handleDragStart, handleDragEnd } = dragAndDropHandler;
+  const { draggedItemId, handleDragEnter, handleDragOver, handleDragStart, handleDragEnd } =
+    dragAndDropHandler;
   const title = song.title_ko || song.title_ja;
   const artist = song.artist_ko || song.artist_ja;
+
+  const isDragging = draggedItemId === listId;
 
   return (
     <ul
@@ -29,7 +32,7 @@ function FavoriteSongCard({ song, listId, dragAndDropHandler }: SongCardProps) {
       onDragEnter={() => handleDragEnter(song.order)}
       onDragEnd={() => handleDragEnd(-1)}
       onDragOver={handleDragOver}
-      className="flex flex-row gap-1"
+      className={`flex flex-row gap-1 py-3 transition-colors duration-200 ${isDragging ? "bg-button-ghost opacity-50" : ""} ${draggedItemId !== null && !isDragging ? "border-t-2 border-dashed border-solid-default" : ""} \`}`}
     >
       <div className="h-[70px] min-w-[70px]">
         <Picture

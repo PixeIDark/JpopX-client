@@ -16,7 +16,7 @@ function FavoriteSongList({ listId }: FavoriteSongListProps) {
   if (!list) return null;
 
   return (
-    <li className="flex flex-col gap-6">
+    <li className="flex flex-col">
       {list.map((song) => (
         <FavoriteSongCard
           key={song.id}
