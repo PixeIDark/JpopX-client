@@ -8,7 +8,7 @@ interface BottomNavItemProps {
   path: string;
   label: string;
   Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  IconFill: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  IconFill?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
 
 function BottomNavItem({ item }: { item: BottomNavItemProps }) {
@@ -18,7 +18,7 @@ function BottomNavItem({ item }: { item: BottomNavItemProps }) {
   return (
     <Link href={item.path} className="flex w-16 flex-col items-center justify-center gap-1">
       {isActive ? (
-        <item.IconFill width={24} height={24} className="fill-icon-bg" />
+        item.IconFill && <item.IconFill width={24} height={24} className="fill-icon-bg" />
       ) : (
         <item.Icon width={24} height={24} className="fill-icon-stroke" />
       )}
