@@ -6,8 +6,9 @@ import Search from "@/assets/icons/search/search.svg";
 import SearchFill from "@/assets/icons/search/search_fill.svg";
 import MyList from "@/assets/icons/myLists/myLists.svg";
 import MyListFill from "@/assets/icons/myLists/myLists_fill.svg";
+import Profile from "@/assets/icons/profile/profile.svg";
 import BottomNavItem from "@/app/_layout/BottomNav/BottomNavItem";
-import { useSelectedLayoutSegment } from "next/navigation";
+import { useSelectedLayoutSegments } from "next/navigation";
 
 const NAV_ITEMS = [
   {
@@ -28,12 +29,16 @@ const NAV_ITEMS = [
     Icon: MyList,
     IconFill: MyListFill,
   },
+  {
+    path: "/profile",
+    label: "Profile",
+    Icon: Profile,
+  },
 ] as const;
 
 function BottomNav() {
-  const segment = useSelectedLayoutSegment();
-  if (segment === "(auth)") return null;
-
+  const segment = useSelectedLayoutSegments();
+  if (segment[0] === "(auth)" || segment[1] === "profile") return null;
   return (
     <div>
       <div className="pt fixed bottom-0 flex w-full items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
