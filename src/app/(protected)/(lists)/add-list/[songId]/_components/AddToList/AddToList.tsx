@@ -19,9 +19,7 @@ function AddToList({ list, songId }: FavoriteListProps) {
         <Picture
           src={list.image_url}
           alt={`${list.name}'s image`}
-          width={56}
-          height={56}
-          className="rounded-lg"
+          className="h-14 w-14 rounded-lg"
         />
         <div className="a flex flex-col justify-center">
           <h1 className="text-left text-base text-text-h">{list.name}</h1>
