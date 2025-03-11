@@ -1,44 +1,22 @@
 "use client";
 
-import Home from "@/assets/icons/home/home.svg";
-import HomeFill from "@/assets/icons/home/home_fill.svg";
-import Search from "@/assets/icons/search/search.svg";
-import SearchFill from "@/assets/icons/search/search_fill.svg";
-import MyList from "@/assets/icons/myLists/myLists.svg";
-import MyListFill from "@/assets/icons/myLists/myLists_fill.svg";
-import Profile from "@/assets/icons/profile/profile.svg";
 import BottomNavItem from "@/app/_layout/BottomNav/BottomNavItem";
 import { useSelectedLayoutSegments } from "next/navigation";
-
-const NAV_ITEMS = [
-  {
-    path: "/",
-    label: "Home",
-    Icon: Home,
-    IconFill: HomeFill,
-  },
-  {
-    path: "/search",
-    label: "Search",
-    Icon: Search,
-    IconFill: SearchFill,
-  },
-  {
-    path: "/mylist",
-    label: "My List",
-    Icon: MyList,
-    IconFill: MyListFill,
-  },
-  {
-    path: "/profile",
-    label: "Profile",
-    Icon: Profile,
-  },
-] as const;
+import { useSession } from "next-auth/react";
+import {
+  BASE_NAV_ITEMS,
+  LOGIN_ITEM,
+  PROFILE_ITEM,
+} from "@/app/_layout/BottomNav/_constants/nav-item";
 
 function BottomNav() {
   const segment = useSelectedLayoutSegments();
+  const { status } = useSession();
+
   if (segment[0] === "(auth)" || segment[1] === "profile") return null;
+
+  const NAV_ITEMS = [...BASE_NAV_ITEMS, status === "authenticated" ? PROFILE_ITEM : LOGIN_ITEM];
+
   return (
     <div>
       <div className="pt fixed bottom-0 flex w-full items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
