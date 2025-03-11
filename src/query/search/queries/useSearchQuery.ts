@@ -1,6 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { getSearchQueryKey } from "@/query/search/key";
 import { searchApi } from "@/api/search";
+import { getSearchQueryKey } from "@/query/search";
 import { SearchPanelParams } from "@/types/search.type";
 
 export type SearchQueryParams = SearchPanelParams & { text: string };
@@ -21,7 +21,7 @@ export function useSearchQuery(params: SearchQueryParams) {
       }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
-      const { total, page, limit } = lastPage.data;
+      const { total, page, limit } = lastPage;
       const loadedItems = page * limit;
 
       return loadedItems < total ? page + 1 : undefined;

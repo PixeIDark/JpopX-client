@@ -39,22 +39,24 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   async function (error) {
+    if (typeof window === "undefined") return;
+
     const originalRequest = error.config;
 
     if (originalRequest._retry >= MAX_RETRIES) {
-      await signOut({ redirect: true, callbackUrl: "/login" });
+      await signOut({ redirect: true, callbackUrl: "/login?toast=refresh_token_expires" });
       return Promise.reject(error);
     }
 
     if (error.response && error.response.status === 401) {
-      originalRequest._retry ??= 1;
+      originalRequest._retry ??= 0;
       originalRequest._retry++;
 
       try {
         const session = await getIsomorphicSession();
 
         if (!session?.user?.refreshToken) {
-          await signOut({ redirect: true, callbackUrl: "/login" });
+          await signOut({ redirect: true, callbackUrl: "/login?toast=refresh_token_expires" });
           return Promise.reject(error);
         }
 

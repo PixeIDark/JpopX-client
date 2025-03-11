@@ -5,12 +5,13 @@ import { Manrope } from "next/font/google";
 import { getServerSession } from "next-auth";
 import SessionProvider from "@/app/_providers/SessionProvider";
 import QueryProvider from "@/app/_providers/QueryProvider";
-import TopNav from "@/app/_components/layout/TopNav";
-import BottomNav from "@/app/_components/layout/BottomNav";
+import TopNav from "@/app/_layout/TopNav";
+import BottomNav from "@/app/_layout/BottomNav";
 import { authOptions } from "@/lib/next-auth/nextAuth";
 import ToastProvider from "@/components/ui/Toast/ToastContext";
 import { ScrollPositionProvider } from "@/app/_providers/ScrollPositionProvider";
 import { getTheme } from "@/utils/theme";
+import Main from "@/app/_layout/Main";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -40,7 +41,7 @@ async function RootLayout({
               <ScrollPositionProvider>
                 <div className="flex h-screen flex-col">
                   <TopNav currentTheme={theme} />
-                  <main className="overflow-y-auto px-4">{children}</main>
+                  <Main>{children}</Main>
                   <BottomNav />
                 </div>
               </ScrollPositionProvider>

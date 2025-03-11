@@ -12,7 +12,12 @@ const url = "auth";
 
 export const authApi = {
   account: (data: AccountRequest) => axiosInstance.post<AccountResponse>(`${url}/signup`, data),
-  login: (data: LoginRequest) => axiosInstance.post<LoginResponse>(`${url}/login`, data),
+
+  login: async (data: LoginRequest) => {
+    const response = await axiosInstance.post<LoginResponse>(`${url}/login`, data);
+    return response.data;
+  },
+
   logout: async (accessToken: string) => {
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
@@ -23,23 +28,26 @@ export const authApi = {
         },
       });
     } catch (error) {
-      console.error("Server Logout Failed:", error);
+      console.error(error);
+      return Promise.reject(error);
     }
   },
+  
   refresh: async (refreshToken: RefreshRequest): Promise<RefreshResponse> => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/${url}/refresh`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({ refreshToken }),
-    });
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/${url}/refresh`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+      return response.json();
+    } catch (error) {
+      console.error(error);
+      return Promise.reject(error);
     }
-
-    return response.json();
   },
 };

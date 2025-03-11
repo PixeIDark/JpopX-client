@@ -1,6 +1,7 @@
 import { SearchItems } from "@/types/search.type";
-import Image from "next/image";
 import Button from "@/components/ui/Button";
+import Picture from "@/components/ui/Picture";
+import Link from "next/link";
 
 interface SongCardProps {
   song: SearchItems;
@@ -12,13 +13,13 @@ function SongCard({ song }: SongCardProps) {
 
   return (
     <ul className="flex flex-row gap-1">
-      <Image
-        src={song.thumbnail_url || "asdf"}
-        alt={`${artist}'s ${title} Image`}
-        width={70}
-        height={70}
-        className="rounded-xl"
-      />
+      <div className="h-[70px] min-w-[70px]">
+        <Picture
+          src={song.thumbnail_url}
+          alt={`${artist}'s ${title} Image`}
+          className="h-full w-full rounded-xl object-fill"
+        />
+      </div>
       <div className="ml-3 flex w-full flex-col justify-between">
         <h1
           className="overflow-hidden text-ellipsis whitespace-nowrap text-text-h"
@@ -37,8 +38,8 @@ function SongCard({ song }: SongCardProps) {
           <p className="text-text-ky">KY {song.kumyoung_number}</p>
         </div>
       </div>
-      <Button variant="ghost" className="h-8 min-w-20 max-w-20 text-sm font-medium">
-        Add
+      <Button variant="ghost" className="h-8 min-w-20 max-w-20 text-sm font-medium" asChild>
+        <Link href={`/add-list/${song.song_id}`}>Add</Link>
       </Button>
     </ul>
   );

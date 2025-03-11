@@ -13,7 +13,10 @@ const url = "auth";
 
 export const authApi = {
   account: (data: AccountRequest) => axiosInstance.post<AccountResponse>(`${url}/signup`, data),
-  login: (data: LoginRequest) => axiosInstance.post<LoginResponse>(`${url}/login`, data),
+  login: async (data: LoginRequest) => {
+    const response = await axiosInstance.post<LoginResponse>(`${url}/login`, data);
+    return response.data;
+  },
   logout: async (accessToken: string) => {
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
@@ -24,24 +27,112 @@ export const authApi = {
         },
       });
     } catch (error) {
-      console.error("Server Logout Failed:", error);
+      console.error(error);
+      return Promise.reject(error);
     }
   },
   refresh: async (refreshToken: RefreshRequest): Promise<RefreshResponse> => {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/${url}/refresh`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({ refreshToken }),
-    });
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/${url}/refresh`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ refreshToken }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+      return response.json();
+    } catch (error) {
+      console.error(error);
+      return Promise.reject(error);
     }
+  },
+};
 
-    return response.json();
+
+--- src/api/favorite-lists.ts ---
+import { axiosInstance } from "@/lib/axios/instance";
+import {
+  AddSongToListRequest,
+  AddSongToListResponse,
+  CreateFavoriteListRequest,
+  CreateFavoriteListResponse,
+  DeleteFavoriteListResponse,
+  GetFavoriteListSongsResponse,
+  GetFavoriteListsResponse,
+  RemoveSongFromListResponse,
+  ReorderListRequest,
+  ReorderListResponse,
+  ReorderSongRequest,
+  ReorderSongResponse,
+  UpdateFavoriteListRequest,
+  UpdateFavoriteListResponse,
+} from "@/types/favorite-list.type";
+
+const url = "favorites";
+
+export const favoriteListsApi = {
+  getLists: async () => {
+    const response = await axiosInstance.get<GetFavoriteListsResponse>(`${url}/lists`);
+    return response.data;
+  },
+
+  getListSongs: async (listId: number) => {
+    const response = await axiosInstance.get<GetFavoriteListSongsResponse>(
+      `${url}/lists/${listId}/songs`
+    );
+    return response.data;
+  },
+
+  createList: async (data: CreateFavoriteListRequest) => {
+    const response = await axiosInstance.post<CreateFavoriteListResponse>(`${url}/lists`, data);
+    return response.data;
+  },
+
+  updateList: async (listId: number, data: UpdateFavoriteListRequest) => {
+    const response = await axiosInstance.put<UpdateFavoriteListResponse>(
+      `${url}/lists/${listId}`,
+      data
+    );
+    return response.data;
+  },
+
+  deleteList: async (listId: number) => {
+    const response = await axiosInstance.delete<DeleteFavoriteListResponse>(
+      `${url}/lists/${listId}`
+    );
+    return response.data;
+  },
+
+  reorderList: async (data: ReorderListRequest) => {
+    const response = await axiosInstance.put<ReorderListResponse>(`${url}/lists/reorder`, data);
+    return response.data;
+  },
+
+  addSongToList: async (listId: number, data: AddSongToListRequest) => {
+    try {
+      const response = await axiosInstance.post<AddSongToListResponse>(
+        `${url}/lists/${listId}/songs`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      console.error(error);
+      return Promise.reject(error);
+    }
+  },
+
+  removeSongFromList: async (favoriteId: number) => {
+    const response = await axiosInstance.delete<RemoveSongFromListResponse>(
+      `${url}/songs/${favoriteId}`
+    );
+    return response.data;
+  },
+
+  reorderSong: async (data: ReorderSongRequest) => {
+    const response = await axiosInstance.put<ReorderSongResponse>(`${url}/songs/reorder`, data);
+    return response.data;
   },
 };
 
@@ -52,8 +143,8 @@ import { SearchRequest, SearchResponse } from "@/types/search.type";
 
 const url = "search";
 
-export const searchApi = (params: SearchRequest) =>
-  axiosInstance.get<SearchResponse>(url, {
+export const searchApi = async (params: SearchRequest) => {
+  const response = await axiosInstance.get<SearchResponse>(url, {
     params: {
       text: params.text || "",
       searchType: params.searchType || "both",
@@ -62,6 +153,8 @@ export const searchApi = (params: SearchRequest) =>
       page: params.page || 1,
     },
   });
+  return response.data;
+};
 
 
 --- src/api/users.ts ---
@@ -71,7 +164,10 @@ const url = "users";
 
 export const usersApi = {
   all: () => axiosInstance.get<AllResponse>(`${url}`),
-  me: () => axiosInstance.get<MeResponse>(`${url}/me`),
+  me: async () => {
+    const response = await axiosInstance.get<MeResponse>(`${url}/me`);
+    return response.data;
+  },
 };
 
 
@@ -222,9 +318,28 @@ export { default } from "./LoginForm";
 
 
 --- src/app/(auth)/login/page.tsx ---
-import LoginForm from "@/app/(auth)/login/_components/LoginForm";
+"use client";
 
-export default async function LoginPage() {
+import LoginForm from "@/app/(auth)/login/_components/LoginForm";
+import { useSearchParams } from "next/navigation";
+import { useToast } from "@/components/ui/Toast/useToast";
+import { useEffect } from "react";
+
+function LoginPage() {
+  const params = useSearchParams();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const toastText = params.get("toast");
+    if (typeof toastText === "string") {
+      toast({
+        title: toastText,
+        message: toastText,
+        type: "error",
+      });
+    }
+  }, [params]);
+
   return (
     <div>
       <LoginForm />
@@ -232,186 +347,756 @@ export default async function LoginPage() {
   );
 }
 
+export default LoginPage;
 
---- src/app/_components/layout/BottomNav/BottomNavItem/BottomNavItem.tsx ---
-"use client";
 
-import React from "react";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
+--- src/app/(protected)/(lists)/_layout/CreateListButton/_hooks/useCreateListSubmit.ts ---
+import { useCreateFavoriteListMutation } from "@/query/favorite-lists";
+import { FormEvent, useRef, useState } from "react";
 
-interface BottomNavItemProps {
-  path: string;
-  label: string;
-  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  IconFill: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+export function useCreateListSubmit() {
+  const { mutate: createFavoriteListMutate } = useCreateFavoriteListMutation();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const name = inputRef.current?.value.trim() || "";
+    if (name.length > 0) {
+      createFavoriteListMutate({ name });
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+      setDialogOpen(false);
+    }
+  };
+
+  return { dialogOpen, setDialogOpen, inputRef, handleSubmit };
 }
 
-function BottomNavItem({ item }: { item: BottomNavItemProps }) {
-  const pathname = usePathname();
 
-  const isActive = item.path === pathname;
-  return (
-    <Link href={item.path} className="flex w-16 flex-col items-center justify-center gap-1">
-      {isActive ? (
-        <item.IconFill width={24} height={24} className="fill-icon-bg" />
-      ) : (
-        <item.Icon width={24} height={24} className="fill-icon-stroke" />
-      )}
-      <p className="text-xs text-text-p">{item.label}</p>
-    </Link>
-  );
-}
-
-export default BottomNavItem;
-
-
---- src/app/_components/layout/BottomNav/BottomNavItem/index.ts ---
-export { default } from "./BottomNavItem";
-
-
---- src/app/_components/layout/BottomNav/BottomNav.tsx ---
+--- src/app/(protected)/(lists)/_layout/CreateListButton/CreateListButton.tsx ---
 "use client";
 
-import Home from "@/assets/icons/home/home.svg";
-import HomeFill from "@/assets/icons/home/home_fill.svg";
-import Search from "@/assets/icons/search/search.svg";
-import SearchFill from "@/assets/icons/search/search_fill.svg";
-import BottomNavItem from "@/app/_components/layout/BottomNav/BottomNavItem";
-import { useSelectedLayoutSegment } from "next/navigation";
+import Button from "@/components/ui/Button";
+import Dialog from "@/components/ui/Dialog";
+import Input from "@/components/ui/Input";
+import { useCreateListSubmit } from "@/app/(protected)/(lists)/_layout/CreateListButton/_hooks/useCreateListSubmit";
 
-const NAV_ITEMS = [
-  {
-    path: "/",
-    label: "home",
-    Icon: Home,
-    IconFill: HomeFill,
-  },
-  {
-    path: "/search",
-    label: "search",
-    Icon: Search,
-    IconFill: SearchFill,
-  },
-] as const;
-
-function BottomNav() {
-  const segment = useSelectedLayoutSegment();
-  if (segment === "(auth)") return null;
+function CreateListButton() {
+  const { dialogOpen, setDialogOpen, inputRef, handleSubmit } = useCreateListSubmit();
 
   return (
-    <div>
-      <div className="pt fixed bottom-0 flex w-full items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
-        {NAV_ITEMS.map((item) => (
-          <BottomNavItem key={item.path} item={item} />
-        ))}
-      </div>
-      <div className="h-[77px] w-full" />
+    <div className="fixed bottom-[77px] left-0 right-0 px-4 pb-3">
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog.Trigger asChild>
+          <Button variant="active">Create New List</Button>
+        </Dialog.Trigger>
+        <Dialog.Content>
+          <form onClick={handleSubmit} className="flex flex-col gap-4">
+            <h1 className="text-center">List Name</h1>
+            <Input ref={inputRef} type="text" placeholder="Please Write" />
+            <Button variant="active" className="mx-auto h-[40] w-20">
+              Create
+            </Button>
+          </form>
+        </Dialog.Content>
+      </Dialog>
     </div>
   );
 }
 
-export default BottomNav;
+export default CreateListButton;
 
 
---- src/app/_components/layout/BottomNav/index.ts ---
-export { default } from "./BottomNav";
+--- src/app/(protected)/(lists)/_layout/CreateListButton/index.ts ---
+export { default } from "./CreateListButton";
 
 
---- src/app/_components/layout/TopNav/ThemeToggle/ThemeToggle.tsx ---
+--- src/app/(protected)/(lists)/add-list/[songId]/_components/AddToList/CheckFavoriteList/CheckFavoriteList.tsx ---
 "use client";
 
-import { useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { MdLightMode, MdOutlineNightlightRound } from "react-icons/md";
-import { setTheme } from "@/utils/theme";
+import { Circle } from "lucide-react";
 
-interface ThemeToggleProps {
-  currentTheme: "light" | "dark";
+interface CheckFavoriteListProps {
+  isChecked: boolean;
 }
 
-function ThemeToggle({ currentTheme }: ThemeToggleProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+function CheckFavoriteList({ isChecked }: CheckFavoriteListProps) {
+  return (
+    <>
+      {!isChecked ? (
+        <Circle strokeWidth={1.5} className="stroke-icon-stroke" />
+      ) : (
+        <Circle strokeWidth={1.5} className="fill-icon-bg stroke-icon-stroke" />
+      )}
+    </>
+  );
+}
 
-  const toggleTheme = async () => {
-    const newTheme = currentTheme === "light" ? "dark" : "light";
+export default CheckFavoriteList;
 
-    await setTheme(newTheme);
 
-    startTransition(() => {
-      router.refresh();
-    });
+--- src/app/(protected)/(lists)/add-list/[songId]/_components/AddToList/CheckFavoriteList/index.ts ---
+export { default } from "./CheckFavoriteList";
+
+
+--- src/app/(protected)/(lists)/add-list/[songId]/_components/AddToList/_hooks/useAddToListToggle.ts ---
+import { useAddSongToListMutation, useRemoveSongFromListMutation } from "@/query/favorite-lists";
+import { useState } from "react";
+
+export function useAddToListToggle(listId: number, songId: number) {
+  const { mutateAsync: addSongToListMutate } = useAddSongToListMutation(listId);
+  const { mutate: removeSongFromListMutate } = useRemoveSongFromListMutation(listId);
+  const [isChecked, setIsChecked] = useState(false);
+  const [favoriteId, setFavoriteId] = useState<number | null>(null);
+
+  const handleAddSongToList = async () => {
+    const data = await addSongToListMutate({ songId });
+    setFavoriteId(data.favorite_id);
+    setIsChecked(true);
   };
 
+  const handleRemoveSongFromList = () => {
+    if (!favoriteId) return;
+    removeSongFromListMutate(favoriteId);
+    setFavoriteId(null);
+    setIsChecked(false);
+  };
+
+  const handleToggle = () => {
+    if (!isChecked) handleAddSongToList();
+    else handleRemoveSongFromList();
+  };
+
+  return { isChecked, handleToggle };
+}
+
+
+--- src/app/(protected)/(lists)/add-list/[songId]/_components/AddToList/AddToList.tsx ---
+"use client";
+
+import { FavoriteList as List } from "@/types/favorite-list.type";
+import Picture from "@/components/ui/Picture";
+import CheckFavoriteList from "@/app/(protected)/(lists)/add-list/[songId]/_components/AddToList/CheckFavoriteList";
+import { useAddToListToggle } from "@/app/(protected)/(lists)/add-list/[songId]/_components/AddToList/_hooks/useAddToListToggle";
+
+interface FavoriteListProps {
+  list: List;
+  songId: number;
+}
+
+function AddToList({ list, songId }: FavoriteListProps) {
+  const { isChecked, handleToggle } = useAddToListToggle(list.id, songId);
+
   return (
-    <button
-      onClick={toggleTheme}
-      disabled={isPending}
-      className="relative h-10 max-h-10 w-10 rounded-md p-2 hover:bg-button-ghost"
-      aria-label={`Switch to ${currentTheme === "light" ? "dark" : "light"} mode`}
-    >
-      {currentTheme === "light" ? (
-        <MdOutlineNightlightRound size={24} className="text-text-h" />
-      ) : (
-        <MdLightMode size={24} className="text-text-h" />
-      )}
+    <button onClick={handleToggle} className="flex items-center justify-between py-2">
+      <div className="flex items-center gap-4">
+        <Picture
+          src={list.image_url}
+          alt={`${list.name}'s image`}
+          width={56}
+          height={56}
+          className="rounded-lg"
+        />
+        <div className="a flex flex-col justify-center">
+          <h1 className="text-left text-base text-text-h">{list.name}</h1>
+          <p className="text-sm text-text-p">{list.updated_at}</p>
+        </div>
+      </div>
+      <CheckFavoriteList isChecked={isChecked} />
     </button>
   );
 }
 
-export default ThemeToggle;
+export default AddToList;
 
 
---- src/app/_components/layout/TopNav/ThemeToggle/index.ts ---
-export { default } from "./ThemeToggle";
+--- src/app/(protected)/(lists)/add-list/[songId]/_components/AddToList/index.ts ---
+export { default } from "./AddToList";
 
 
---- src/app/_components/layout/TopNav/TopNav.tsx ---
+--- src/app/(protected)/(lists)/add-list/[songId]/page.tsx ---
 "use client";
 
-import { ArrowLeft } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import Link from "next/link";
-import ThemeToggle from "@/app/_components/layout/TopNav/ThemeToggle";
+import { useQuery } from "@tanstack/react-query";
+import { favoriteListsOption } from "@/query/favorite-lists/options/favoriteListsOption";
+import { use } from "react";
+import AddToList from "@/app/(protected)/(lists)/add-list/[songId]/_components/AddToList";
 
-const NAV_TITLE = {
-  "/": "Home",
-  "/login": "Login",
-  "/account": "Account",
-  "/search": "Search",
-} as const;
+function AddListPage({ params }: { params: Promise<{ songId: string }> }) {
+  const { data: lists } = useQuery(favoriteListsOption);
+  const { songId } = use(params);
 
-type NavPath = keyof typeof NAV_TITLE;
+  if (!lists || !songId) return null;
 
-interface TopNavProps {
-  currentTheme: "light" | "dark";
-}
-
-function TopNav({ currentTheme }: TopNavProps) {
-  const pathname = usePathname();
-  const router = useRouter();
-
-  const title = pathname in NAV_TITLE ? NAV_TITLE[pathname as NavPath] : "Unknown Page";
+  const parsedSongId = parseInt(songId);
 
   return (
-    <div className="pt sticky top-0 flex items-center justify-between border-b border-solid-default bg-body-default px-4 pb-3 pt-5">
-      <button onClick={() => router.back()} className="p-2">
-        <ArrowLeft size={24} strokeWidth={1.5} />
-      </button>
-      <Link href="/">
-        <h1 className="text-lg font-semibold text-text-h">{title}</h1>
+    <li className="flex flex-col">
+      {lists.map((list) => (
+        <AddToList key={list.id} list={list} songId={parsedSongId} />
+      ))}
+    </li>
+  );
+}
+
+export default AddListPage;
+
+
+--- src/app/(protected)/(lists)/mylist/[listId]/page.tsx ---
+async function ListIdPage({ params }: { params: Promise<{ listId: string }> }) {
+  const { listId } = await params;
+
+  console.log(listId);
+
+  return <div>어서오게나.. 상세페이지일세</div>;
+}
+
+export default ListIdPage;
+
+
+--- src/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled/ListControlled.tsx ---
+"use client";
+
+import { EllipsisVertical } from "lucide-react";
+import Sheet from "@/components/ui/Sheet";
+import Button from "@/components/ui/Button";
+import {
+  useDeleteFavoriteListMutation,
+  useUpdateFavoriteListMutation,
+} from "@/query/favorite-lists";
+import Dialog from "@/components/ui/Dialog";
+import Input from "@/components/ui/Input";
+import { useRef } from "react";
+
+interface ListControlledProps {
+  listId: number;
+}
+
+function ListControlled({ listId }: ListControlledProps) {
+  const { mutate: deleteFavoriteList } = useDeleteFavoriteListMutation();
+  const { mutate: updateFavoriteList } = useUpdateFavoriteListMutation(listId);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleDelete = () => deleteFavoriteList(listId);
+
+  const handleChangeName = () => {
+    const name = inputRef.current?.value;
+    if (name && name.length) {
+      updateFavoriteList({ name });
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+    }
+  };
+
+  return (
+    <Sheet>
+      <Sheet.Trigger className="p-2">
+        <EllipsisVertical width={24} height={24} />
+      </Sheet.Trigger>
+      <Sheet.Content>
+        <div className="flex flex-col">
+          <Dialog>
+            <Dialog.Trigger asChild>
+              <Button variant="link">Modify</Button>
+            </Dialog.Trigger>
+            <Dialog.Content>
+              <form onSubmit={handleChangeName} className="flex flex-col gap-4">
+                <h1 className="mx-auto">Change List</h1>
+                <Input ref={inputRef} type="text" placeholder="New List Name" />
+                <Button onClick={handleChangeName} variant="active">
+                  Change Name
+                </Button>
+              </form>
+            </Dialog.Content>
+          </Dialog>
+          <Button onClick={handleDelete} variant="link">
+            Delete
+          </Button>
+        </div>
+      </Sheet.Content>
+    </Sheet>
+  );
+}
+
+export default ListControlled;
+
+
+--- src/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled/index.ts ---
+export { default } from "./ListControlled";
+
+
+--- src/app/(protected)/(lists)/mylist/_components/FavoriteList/FavoriteList.tsx ---
+"use client";
+
+import { FavoriteList as List } from "@/types/favorite-list.type";
+import Picture from "@/components/ui/Picture";
+import Link from "next/link";
+import ListControlled from "@/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled";
+import React from "react";
+
+interface DragAndDropHandler {
+  handleDragStart: (id: number) => void;
+  handleDragEnter: (order: number) => void;
+  handleDragEnd: (userId: number) => void;
+  handleDragOver: (e: { preventDefault: () => void }) => void;
+}
+
+interface FavoriteListProps {
+  list: List;
+  dragAndDropHandler: DragAndDropHandler;
+}
+
+function FavoriteList({ list, dragAndDropHandler }: FavoriteListProps) {
+  const { handleDragEnter, handleDragOver, handleDragStart, handleDragEnd } = dragAndDropHandler;
+
+  return (
+    <div
+      onDragStart={() => handleDragStart(list.id)}
+      onDragEnter={() => handleDragEnter(list.order)}
+      onDragEnd={() => handleDragEnd(list.user_id)}
+      onDragOver={handleDragOver}
+      className="flex items-center justify-between"
+    >
+      <Link href={`/mylist/${list.id}`} className="flex w-full items-center justify-between py-2">
+        <div className="flex items-center gap-4">
+          <Picture
+            src={list.image_url}
+            alt={`${list.name}'s image`}
+            width={56}
+            height={56}
+            className="rounded-lg"
+          />
+          <div className="a flex flex-col justify-center">
+            <h1 className="text-left text-base text-text-h">{list.name}</h1>
+            <p className="text-sm text-text-p">{list.updated_at}</p>
+          </div>
+        </div>
       </Link>
-      <ThemeToggle currentTheme={currentTheme} />
+      <ListControlled listId={list.id} />
     </div>
   );
 }
 
-export default TopNav;
+export default FavoriteList;
 
 
---- src/app/_components/layout/TopNav/index.ts ---
-export { default } from "./TopNav";
+--- src/app/(protected)/(lists)/mylist/_components/FavoriteList/index.ts ---
+export { default } from "./FavoriteList";
+
+
+--- src/app/(protected)/(lists)/mylist/page.tsx ---
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { favoriteListsOption } from "@/query/favorite-lists/options/favoriteListsOption";
+import FavoriteList from "@/app/(protected)/(lists)/mylist/_components/FavoriteList";
+import { useReorderFavoriteList } from "@/query/favorite-lists";
+import { useDragAndDrop } from "@/hooks/useDragAndDrop";
+
+function MyListPage() {
+  const { data: lists } = useQuery(favoriteListsOption);
+  const { mutate: reorderFavoriteList } = useReorderFavoriteList();
+  const dragAndDropHandler = useDragAndDrop(reorderFavoriteList);
+
+  if (!lists) return null;
+
+  return (
+    <div>
+      {lists.map((list) => (
+        <FavoriteList key={list.id} list={list} dragAndDropHandler={dragAndDropHandler} />
+      ))}
+    </div>
+  );
+}
+
+export default MyListPage;
+
+
+--- src/app/(protected)/(lists)/layout.tsx ---
+"use server";
+
+import React from "react";
+import { getServerQueryClient } from "@/lib/tanStackQuery/getServerQueryClient";
+import { favoriteListsOption } from "@/query/favorite-lists/options/favoriteListsOption";
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import CreateListButton from "@/app/(protected)/(lists)/_layout/CreateListButton";
+
+async function ListsLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  const queryClient = getServerQueryClient();
+
+  await queryClient.prefetchQuery(favoriteListsOption);
+
+  return (
+    <div className="relative">
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <div>{children}</div>
+      </HydrationBoundary>
+      <div className="h-[60] w-full" />
+      <CreateListButton />
+    </div>
+  );
+}
+
+export default ListsLayout;
+
+
+--- src/app/(public)/search/_components/SearchPanel/SearchFilter/SearchFilter.tsx ---
+import Button from "@/components/ui/Button";
+import React from "react";
+import { SearchType } from "@/types/search.type";
+import { useQueryParamState } from "@/hooks/useQueryParamState";
+
+interface SearchFilterProps {
+  initialSearchType: SearchType;
+}
+
+const SEARCH_TYPES = ["both", "title", "artist"] as const;
+
+function SearchFilter({ initialSearchType }: SearchFilterProps) {
+  const { choiceParam, applyQueryParams } = useQueryParamState(initialSearchType, "search");
+
+  return (
+    <div className="flex gap-3">
+      {SEARCH_TYPES.map((type, idx) => (
+        <Button
+          key={idx}
+          variant={choiceParam === type ? "outline" : "ghost"}
+          value={type}
+          onClick={applyQueryParams}
+          className="h-11 max-w-[70px] text-sm"
+        >
+          {type}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+export default SearchFilter;
+
+
+--- src/app/(public)/search/_components/SearchPanel/SearchFilter/index.ts ---
+export { default } from "./SearchFilter";
+
+
+--- src/app/(public)/search/_components/SearchPanel/SearchInput/SearchInput.tsx ---
+"use client";
+
+import Input from "@/components/ui/Input";
+import { useQueryInput } from "@/hooks/useQueryInput";
+
+interface SearchInputProps {
+  initialText: string;
+}
+
+function SearchInput({ initialText }: SearchInputProps) {
+  const { handleSubmit, inputRef } = useQueryInput(initialText, "text");
+
+  return (
+    <form onSubmit={handleSubmit} className="w-full">
+      <Input
+        placeholder="Please Enter Something"
+        ref={inputRef}
+        type="text"
+        defaultValue={initialText}
+      />
+    </form>
+  );
+}
+
+export default SearchInput;
+
+
+--- src/app/(public)/search/_components/SearchPanel/SearchInput/index.ts ---
+export { default } from "./SearchInput";
+
+
+--- src/app/(public)/search/_components/SearchPanel/SearchSort/SearchSort.tsx ---
+"use client";
+
+import Button from "@/components/ui/Button";
+import { Sort } from "@/types/search.type";
+import React from "react";
+import { useQueryParamState } from "@/hooks/useQueryParamState";
+
+interface SearchSortProps {
+  initialSort: Sort;
+}
+
+const SORT_TYPES = ["popular", "latest"] as const;
+
+function SearchSort({ initialSort }: SearchSortProps) {
+  const { choiceParam, applyQueryParams } = useQueryParamState(initialSort, "search");
+
+  return (
+    <div className="flex rounded-xl bg-button-ghost p-1">
+      {SORT_TYPES.map((sort, idx) => (
+        <Button
+          key={idx}
+          variant={choiceParam === sort ? "link" : "ghost"}
+          value={sort}
+          onClick={applyQueryParams}
+          className="h-8"
+        >
+          {sort}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+export default SearchSort;
+
+
+--- src/app/(public)/search/_components/SearchPanel/SearchSort/index.ts ---
+
+
+--- src/app/(public)/search/_components/SearchPanel/SearchPanel.tsx ---
+"use client";
+
+import SearchInput from "@/app/(public)/search/_components/SearchPanel/SearchInput";
+import SearchFilter from "@/app/(public)/search/_components/SearchPanel/SearchFilter";
+import { SearchPanelParams } from "@/types/search.type";
+import SearchSort from "@/app/(public)/search/_components/SearchPanel/SearchSort/SearchSort";
+
+interface SearchPanelProps {
+  params: SearchPanelParams;
+}
+
+function SearchPanel({ params }: SearchPanelProps) {
+  const { text = "", searchType = "both", sort = "popular" } = params;
+
+  return (
+    <div className="mt-3 flex flex-col gap-3">
+      <SearchInput initialText={text} />
+      <SearchFilter initialSearchType={searchType} />
+      <SearchSort initialSort={sort} />
+    </div>
+  );
+}
+
+export default SearchPanel;
+
+
+--- src/app/(public)/search/_components/SearchPanel/index.ts ---
+export { default } from "./SearchPanel";
+
+
+--- src/app/(public)/search/_components/SearchResult/SearchList/SearchList.tsx ---
+import { SearchItems } from "@/types/search.type";
+import SongCard from "@/components/common/SongCard";
+
+interface SearchListProps {
+  songs: SearchItems[];
+}
+
+function SearchList({ songs }: SearchListProps) {
+  return (
+    <li className="flex flex-col gap-6">
+      {songs.map((song) => (
+        <SongCard key={song.id} song={song} />
+      ))}
+    </li>
+  );
+}
+
+export default SearchList;
+
+
+--- src/app/(public)/search/_components/SearchResult/SearchList/index.ts ---
+export { default } from "./SearchList";
+
+
+--- src/app/(public)/search/_components/SearchResult/SearchLoading/SearchLoading.tsx ---
+import LoadingSpinner from "@/components/common/LoadingSpinner";
+
+interface SearchResultProps {
+  isLoading: boolean;
+}
+
+function SearchLoading({ isLoading }: SearchResultProps) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center">
+      <LoadingSpinner isLoading={isLoading} size={40} />
+    </div>
+  );
+}
+
+export default SearchLoading;
+
+
+--- src/app/(public)/search/_components/SearchResult/SearchLoading/index.ts ---
+export { default } from "./SearchLoading";
+
+
+--- src/app/(public)/search/_components/SearchResult/_hooks/useSearch.ts ---
+import { useCallback, useRef } from "react";
+import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
+import { SearchQueryParams, useSearchQuery } from "@/query/search";
+
+export function useSearch(params: SearchQueryParams) {
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, error } =
+    useSearchQuery(params);
+
+  const handleIntersect = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  useIntersectionObserver({
+    target: loadMoreRef,
+    onIntersect: handleIntersect,
+    enabled: hasNextPage,
+    rootMargin: "20%",
+  });
+
+  const searchTotal = data?.pages[0]?.total || 0;
+  const songs = data?.pages.flatMap((page) => page.items) || [];
+
+  return {
+    searchTotal,
+    songs,
+    isLoading,
+    isError,
+    error,
+    isFetchingNextPage,
+    hasNextPage,
+    loadMoreRef,
+  };
+}
+
+
+--- src/app/(public)/search/_components/SearchResult/SearchResult.tsx ---
+"use client";
+
+import { SearchPanelParams } from "@/types/search.type";
+import { useSearch } from "@/app/(public)/search/_components/SearchResult/_hooks/useSearch";
+import SearchLoading from "@/app/(public)/search/_components/SearchResult/SearchLoading";
+import NotFound from "@/components/common/NotFound/NotFound";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
+import SearchList from "@/app/(public)/search/_components/SearchResult/SearchList";
+
+interface SearchResultProps {
+  params: SearchPanelParams;
+}
+
+const DISPLAY_COUNT = 2;
+
+function SearchResult({ params }: SearchResultProps) {
+  const { loadMoreRef, isLoading, songs, isFetchingNextPage, searchTotal } = useSearch({
+    ...params,
+    text: params.text || "",
+  });
+
+  if (isLoading) return <SearchLoading isLoading={isLoading} />;
+  if (!songs.length) return <NotFound text="Don't have any songs!" />;
+
+  const displayLimit = Math.max(0, songs.length - DISPLAY_COUNT);
+  const displayedSongs = songs.slice(0, displayLimit);
+  const overflowSongs = songs.slice(displayLimit);
+
+  return (
+    <div className="mt-2">
+      <p className="mb-2 text-sm font-normal text-text-p">{searchTotal} results</p>
+      {displayedSongs.length > 0 && <SearchList songs={displayedSongs} />}
+      <div ref={loadMoreRef} className="h-0 w-full py-3" />
+      {overflowSongs.length > 0 && <SearchList songs={overflowSongs} />}
+      {isFetchingNextPage && <LoadingSpinner isLoading={isFetchingNextPage} />}
+    </div>
+  );
+}
+
+export default SearchResult;
+
+
+--- src/app/(public)/search/_components/SearchResult/index.ts ---
+export { default } from "./SearchResult";
+
+
+--- src/app/(public)/search/page.tsx ---
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import { getServerQueryClient } from "@/lib/tanStackQuery/getServerQueryClient";
+import SearchPanel from "@/app/(public)/search/_components/SearchPanel";
+import SearchResult from "@/app/(public)/search/_components/SearchResult";
+import { SearchPanelParams } from "@/types/search.type";
+import { searchQueryOption } from "@/query/search/options/searchQueryOption";
+
+export default async function SearchPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchPanelParams>;
+}) {
+  const params = await searchParams;
+  const queryClient = getServerQueryClient();
+
+  if (params.text) {
+    await queryClient.prefetchQuery(searchQueryOption(params));
+  }
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <div>
+        <SearchPanel params={params} />
+        <SearchResult params={params} />
+      </div>
+    </HydrationBoundary>
+  );
+}
+
+
+--- src/app/(public)/page.tsx ---
+"use client";
+
+import Button from "@/components/ui/Button";
+import Link from "next/link";
+import { useToast } from "@/components/ui/Toast/useToast";
+import FuckAccessToken from "@/app/_components/test/FuckAccessToken";
+import GetMe from "@/app/_components/test/GetMe";
+import LogoutMe from "@/app/_components/test/LogoutMe";
+
+function HomePage() {
+  const { toast } = useToast();
+
+  const handleButtonClick = () => {
+    toast({
+      title: "알림",
+      message: "작업이 완료되었습니다!",
+      type: "error",
+    });
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Button>outline</Button>
+      <Button variant="link">link</Button>
+      <Button variant="ghost">ghost</Button>
+      <Button variant="active" onClick={handleButtonClick}>
+        active
+      </Button>
+      <Button variant="error" asChild>
+        <Link href="/search">go to page Search</Link>
+      </Button>
+      <Button variant="link" asChild>
+        <Link href="/login">go to page Login</Link>
+      </Button>
+      <FuckAccessToken />
+      <GetMe />
+      <LogoutMe />
+    </div>
+  );
+}
+
+export default HomePage;
 
 
 --- src/app/_components/test/FuckAccessToken.tsx ---
@@ -470,40 +1155,267 @@ function LogoutMe() {
 export default LogoutMe;
 
 
+--- src/app/_layout/BottomNav/BottomNavItem/BottomNavItem.tsx ---
+"use client";
+
+import React from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+
+interface BottomNavItemProps {
+  path: string;
+  label: string;
+  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  IconFill: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+}
+
+function BottomNavItem({ item }: { item: BottomNavItemProps }) {
+  const pathname = usePathname();
+
+  const isActive = item.path === pathname;
+  return (
+    <Link href={item.path} className="flex w-16 flex-col items-center justify-center gap-1">
+      {isActive ? (
+        <item.IconFill width={24} height={24} className="fill-icon-bg" />
+      ) : (
+        <item.Icon width={24} height={24} className="fill-icon-stroke" />
+      )}
+      <p className="text-xs text-text-p">{item.label}</p>
+    </Link>
+  );
+}
+
+export default BottomNavItem;
+
+
+--- src/app/_layout/BottomNav/BottomNavItem/index.ts ---
+export { default } from "./BottomNavItem";
+
+
+--- src/app/_layout/BottomNav/BottomNav.tsx ---
+"use client";
+
+import Home from "@/assets/icons/home/home.svg";
+import HomeFill from "@/assets/icons/home/home_fill.svg";
+import Search from "@/assets/icons/search/search.svg";
+import SearchFill from "@/assets/icons/search/search_fill.svg";
+import MyList from "@/assets/icons/myLists/myLists.svg";
+import MyListFill from "@/assets/icons/myLists/myLists_fill.svg";
+import BottomNavItem from "@/app/_layout/BottomNav/BottomNavItem";
+import { useSelectedLayoutSegment } from "next/navigation";
+
+const NAV_ITEMS = [
+  {
+    path: "/",
+    label: "Home",
+    Icon: Home,
+    IconFill: HomeFill,
+  },
+  {
+    path: "/search",
+    label: "Search",
+    Icon: Search,
+    IconFill: SearchFill,
+  },
+  {
+    path: "/mylist",
+    label: "My List",
+    Icon: MyList,
+    IconFill: MyListFill,
+  },
+] as const;
+
+function BottomNav() {
+  const segment = useSelectedLayoutSegment();
+  if (segment === "(auth)") return null;
+
+  return (
+    <div>
+      <div className="pt fixed bottom-0 flex w-full items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
+        {NAV_ITEMS.map((item) => (
+          <BottomNavItem key={item.path} item={item} />
+        ))}
+      </div>
+      <div className="h-[77px] w-full" />
+    </div>
+  );
+}
+
+export default BottomNav;
+
+
+--- src/app/_layout/BottomNav/index.ts ---
+export { default } from "./BottomNav";
+
+
+--- src/app/_layout/Main/Main.tsx ---
+"use client";
+import { useEffect, useRef, useState } from "react";
+
+function Main({ children }: { children: React.ReactNode }) {
+  const mainRef = useRef<HTMLElement>(null);
+  const [hasScrollbar, setHasScrollbar] = useState(false);
+
+  useEffect(() => {
+    const checkForScrollbar = () => {
+      if (mainRef.current) {
+        const hasVerticalScrollbar = mainRef.current.scrollHeight > mainRef.current.clientHeight;
+        setHasScrollbar(hasVerticalScrollbar);
+      }
+    };
+
+    checkForScrollbar();
+
+    window.addEventListener("resize", checkForScrollbar);
+
+    const observer = new MutationObserver(checkForScrollbar);
+
+    if (mainRef.current) {
+      observer.observe(mainRef.current, {
+        childList: true,
+        subtree: true,
+      });
+    }
+
+    return () => {
+      window.removeEventListener("resize", checkForScrollbar);
+      observer.disconnect();
+    };
+  }, []);
+
+  return (
+    <main ref={mainRef} className={`overflow-y-auto pl-4 ${hasScrollbar ? "pr-3" : "pr-4"}`}>
+      {children}
+    </main>
+  );
+}
+
+export default Main;
+
+
+--- src/app/_layout/Main/index.ts ---
+export { default } from "./Main";
+
+
+--- src/app/_layout/TopNav/ThemeToggle/ThemeToggle.tsx ---
+"use client";
+
+import { useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { MdLightMode, MdOutlineNightlightRound } from "react-icons/md";
+import { setTheme } from "@/utils/theme";
+
+interface ThemeToggleProps {
+  currentTheme: "light" | "dark";
+}
+
+function ThemeToggle({ currentTheme }: ThemeToggleProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const toggleTheme = async () => {
+    const newTheme = currentTheme === "light" ? "dark" : "light";
+
+    await setTheme(newTheme);
+
+    startTransition(() => {
+      router.refresh();
+    });
+  };
+
+  return (
+    <button
+      onClick={toggleTheme}
+      disabled={isPending}
+      className="relative h-10 max-h-10 w-10 rounded-md p-2 hover:bg-button-ghost"
+      aria-label={`Switch to ${currentTheme === "light" ? "dark" : "light"} mode`}
+    >
+      {currentTheme === "light" ? (
+        <MdOutlineNightlightRound size={24} className="text-text-h" />
+      ) : (
+        <MdLightMode size={24} className="text-text-h" />
+      )}
+    </button>
+  );
+}
+
+export default ThemeToggle;
+
+
+--- src/app/_layout/TopNav/ThemeToggle/index.ts ---
+export { default } from "./ThemeToggle";
+
+
+--- src/app/_layout/TopNav/TopNav.tsx ---
+"use client";
+
+import { ArrowLeft } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
+import ThemeToggle from "@/app/_layout/TopNav/ThemeToggle";
+
+const NAV_TITLE = {
+  "/": "Home",
+  "/login": "Login",
+  "/account": "Account",
+  "/search": "Search",
+  "/add-list": "Add List",
+  "/mylist": "My List",
+} as const;
+
+type NavPath = keyof typeof NAV_TITLE;
+
+interface TopNavProps {
+  currentTheme: "light" | "dark";
+}
+
+function TopNav({ currentTheme }: TopNavProps) {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const purePath = "/" + pathname.split("/")[1];
+  const title = purePath in NAV_TITLE ? NAV_TITLE[purePath as NavPath] : "Unknown Page";
+
+  return (
+    <div className="pt sticky top-0 flex items-center justify-between bg-body-default px-4 pb-3 pt-5">
+      <button onClick={() => router.back()} className="p-2">
+        <ArrowLeft size={24} strokeWidth={1.5} />
+      </button>
+      <Link href="/">
+        <h1 className="text-lg font-semibold text-text-h">{title}</h1>
+      </Link>
+      <ThemeToggle currentTheme={currentTheme} />
+    </div>
+  );
+}
+
+export default TopNav;
+
+
+--- src/app/_layout/TopNav/index.ts ---
+export { default } from "./TopNav";
+
+
 --- src/app/_providers/QueryProvider.tsx ---
 "use client";
 
-import { isServer, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import * as React from "react";
 import { ReactQueryStreamedHydration } from "@tanstack/react-query-next-experimental";
-
-const makeQueryClient = () => {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 5 * 60 * 1000,
-        gcTime: 10 * 60 * 1000,
-        refetchOnMount: false,
-        refetchOnWindowFocus: false,
-      },
-    },
-  });
-};
-
-let browserQueryClient: QueryClient | undefined = undefined;
-
-const getQueryClient = () => {
-  if (isServer) {
-    return makeQueryClient();
-  } else {
-    if (!browserQueryClient) browserQueryClient = makeQueryClient();
-    return browserQueryClient;
-  }
-};
+import { useState } from "react";
+import { DEFAULT_QUERY_OPTIONS } from "@/lib/tanStackQuery/queryConfig";
 
 function QueryProvider({ children }: { children: React.ReactNode }) {
-  const queryClient = getQueryClient();
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            ...DEFAULT_QUERY_OPTIONS,
+          },
+        },
+      })
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -608,306 +1520,6 @@ const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
 
 
---- src/app/search/_components/SearchPanel/SearchFilter/SearchFilter.tsx ---
-import Button from "@/components/ui/Button";
-import React from "react";
-import { SearchType } from "@/types/search.type";
-import { useQueryParamState } from "@/hooks/useQueryParamState";
-
-interface SearchFilterProps {
-  initialSearchType: SearchType;
-}
-
-const SEARCH_TYPES = ["both", "title", "artist"] as const;
-
-function SearchFilter({ initialSearchType }: SearchFilterProps) {
-  const { choiceParam, applyQueryParams } = useQueryParamState(initialSearchType, "search");
-
-  return (
-    <div className="flex gap-3">
-      {SEARCH_TYPES.map((type, idx) => (
-        <Button
-          key={idx}
-          variant={choiceParam === type ? "outline" : "ghost"}
-          value={type}
-          onClick={applyQueryParams}
-          className="h-11 max-w-[70px] text-sm"
-        >
-          {type}
-        </Button>
-      ))}
-    </div>
-  );
-}
-
-export default SearchFilter;
-
-
---- src/app/search/_components/SearchPanel/SearchFilter/index.ts ---
-export { default } from "./SearchFilter";
-
-
---- src/app/search/_components/SearchPanel/SearchInput/SearchInput.tsx ---
-"use client";
-
-import Input from "@/components/ui/Input";
-import { useQueryInput } from "@/hooks/useQueryInput";
-
-interface SearchInputProps {
-  initialText: string;
-}
-
-function SearchInput({ initialText }: SearchInputProps) {
-  const { handleSubmit, inputRef } = useQueryInput(initialText, "text");
-
-  return (
-    <form onSubmit={handleSubmit} className="w-full">
-      <Input
-        placeholder="Please Enter Something"
-        ref={inputRef}
-        type="text"
-        defaultValue={initialText}
-      />
-    </form>
-  );
-}
-
-export default SearchInput;
-
-
---- src/app/search/_components/SearchPanel/SearchInput/index.ts ---
-export { default } from "./SearchInput";
-
-
---- src/app/search/_components/SearchPanel/SearchSort/SearchSort.tsx ---
-"use client";
-
-import Button from "@/components/ui/Button";
-import { Sort } from "@/types/search.type";
-import React from "react";
-import { useQueryParamState } from "@/hooks/useQueryParamState";
-
-interface SearchSortProps {
-  initialSort: Sort;
-}
-
-const SORT_TYPES = ["popular", "latest"] as const;
-
-function SearchSort({ initialSort }: SearchSortProps) {
-  const { choiceParam, applyQueryParams } = useQueryParamState(initialSort, "search");
-
-  return (
-    <div className="flex rounded-xl bg-button-ghost p-1">
-      {SORT_TYPES.map((sort, idx) => (
-        <Button
-          key={idx}
-          variant={choiceParam === sort ? "link" : "ghost"}
-          value={sort}
-          onClick={applyQueryParams}
-          className="h-8"
-        >
-          {sort}
-        </Button>
-      ))}
-    </div>
-  );
-}
-
-export default SearchSort;
-
-
---- src/app/search/_components/SearchPanel/SearchSort/index.ts ---
-
-
---- src/app/search/_components/SearchPanel/SearchPanel.tsx ---
-"use client";
-
-import SearchInput from "@/app/search/_components/SearchPanel/SearchInput";
-import SearchFilter from "@/app/search/_components/SearchPanel/SearchFilter";
-import { SearchPanelParams } from "@/types/search.type";
-import SearchSort from "@/app/search/_components/SearchPanel/SearchSort/SearchSort";
-
-interface SearchPanelProps {
-  params: SearchPanelParams;
-}
-
-function SearchPanel({ params }: SearchPanelProps) {
-  const { text = "", searchType = "both", sort = "popular" } = params;
-
-  return (
-    <div className="mt-3 flex flex-col gap-3">
-      <SearchInput initialText={text} />
-      <SearchFilter initialSearchType={searchType} />
-      <SearchSort initialSort={sort} />
-    </div>
-  );
-}
-
-export default SearchPanel;
-
-
---- src/app/search/_components/SearchPanel/index.ts ---
-export { default } from "./SearchPanel";
-
-
---- src/app/search/_components/SearchResult/SearchList/SearchList.tsx ---
-import { SearchItems } from "@/types/search.type";
-import SongCard from "@/components/common/SongCard";
-
-interface SearchListProps {
-  songs: SearchItems[];
-}
-
-function SearchList({ songs }: SearchListProps) {
-  return (
-    <li className="flex flex-col gap-6">
-      {songs.map((song) => (
-        <SongCard key={song.id} song={song} />
-      ))}
-    </li>
-  );
-}
-
-export default SearchList;
-
-
---- src/app/search/_components/SearchResult/SearchList/index.ts ---
-export { default } from "./SearchList";
-
-
---- src/app/search/_components/SearchResult/SearchLoading/SearchLoading.tsx ---
-import LoadingSpinner from "@/components/common/LoadingSpinner";
-
-interface SearchResultProps {
-  isLoading: boolean;
-}
-
-function SearchLoading({ isLoading }: SearchResultProps) {
-  return (
-    <div className="fixed inset-0 flex items-center justify-center">
-      <LoadingSpinner isLoading={isLoading} size={40} />
-    </div>
-  );
-}
-
-export default SearchLoading;
-
-
---- src/app/search/_components/SearchResult/SearchLoading/index.ts ---
-export { default } from "./SearchLoading";
-
-
---- src/app/search/_components/SearchResult/_hooks/useSearch.ts ---
-import { useCallback, useRef } from "react";
-import { SearchQueryParams, useSearchQuery } from "@/query/search/queries/useSearchQuery";
-import { useIntersectionObserver } from "@/hooks/useIntersectionObserver";
-
-export function useSearch(params: SearchQueryParams) {
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, error } =
-    useSearchQuery(params);
-
-  const handleIntersect = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-
-  useIntersectionObserver({
-    target: loadMoreRef,
-    onIntersect: handleIntersect,
-    enabled: hasNextPage,
-    rootMargin: "20%",
-  });
-
-  const searchTotal = data?.pages[0].data.total || 0;
-  const songs = data?.pages.flatMap((page) => page.data.items) || [];
-
-  return {
-    searchTotal,
-    songs,
-    isLoading,
-    isError,
-    error,
-    isFetchingNextPage,
-    hasNextPage,
-    loadMoreRef,
-  };
-}
-
-
---- src/app/search/_components/SearchResult/SearchResult.tsx ---
-"use client";
-
-import { SearchPanelParams } from "@/types/search.type";
-import { useSearch } from "@/app/search/_components/SearchResult/_hooks/useSearch";
-import SearchLoading from "@/app/search/_components/SearchResult/SearchLoading";
-import NotFound from "@/components/common/NotFound/NotFound";
-import LoadingSpinner from "@/components/common/LoadingSpinner";
-import SearchList from "@/app/search/_components/SearchResult/SearchList";
-
-interface SearchResultProps {
-  params: SearchPanelParams;
-}
-
-const DISPLAY_COUNT = 2;
-
-function SearchResult({ params }: SearchResultProps) {
-  if (!params || params.text === undefined) return null;
-
-  const { loadMoreRef, isLoading, songs, isFetchingNextPage, searchTotal } = useSearch({
-    ...params,
-    text: params.text, // 그냥 params 넣으면 params.text 는 string 인게 검증되었는데도 뭐라고함
-  });
-
-  if (isLoading) return <SearchLoading isLoading={isLoading} />;
-
-  if (!songs.length) return <NotFound text="Don't have any songs!" />;
-
-  const displayLimit = songs.length - DISPLAY_COUNT;
-  const displayedSongs = songs.slice(0, displayLimit);
-  const overflowSongs = songs.slice(displayLimit);
-
-  return (
-    <div className="mt-2">
-      <p className="mb-2 text-sm font-normal text-text-p">{searchTotal} results</p>
-      <SearchList songs={displayedSongs} />
-      <div ref={loadMoreRef} className="h-0 w-full py-3" />
-      <SearchList songs={overflowSongs} />
-      {isFetchingNextPage && <LoadingSpinner isLoading={isFetchingNextPage} />}
-    </div>
-  );
-}
-
-export default SearchResult;
-
-
---- src/app/search/_components/SearchResult/index.ts ---
-export { default } from "./SearchResult";
-
-
---- src/app/search/page.tsx ---
-"use server";
-
-import SearchPanel from "@/app/search/_components/SearchPanel";
-import SearchResult from "@/app/search/_components/SearchResult";
-import { SearchPanelParams } from "@/types/search.type";
-
-async function SearchPage({ searchParams }: { searchParams: Promise<SearchPanelParams> }) {
-  const params = await searchParams;
-
-  return (
-    <div>
-      <SearchPanel params={params} />
-      <SearchResult params={params} />
-    </div>
-  );
-}
-
-export default SearchPage;
-
-
 --- src/app/layout.tsx ---
 import React from "react";
 import "./globals.css";
@@ -916,12 +1528,13 @@ import { Manrope } from "next/font/google";
 import { getServerSession } from "next-auth";
 import SessionProvider from "@/app/_providers/SessionProvider";
 import QueryProvider from "@/app/_providers/QueryProvider";
-import TopNav from "@/app/_components/layout/TopNav";
-import BottomNav from "@/app/_components/layout/BottomNav";
+import TopNav from "@/app/_layout/TopNav";
+import BottomNav from "@/app/_layout/BottomNav";
 import { authOptions } from "@/lib/next-auth/nextAuth";
 import ToastProvider from "@/components/ui/Toast/ToastContext";
 import { ScrollPositionProvider } from "@/app/_providers/ScrollPositionProvider";
 import { getTheme } from "@/utils/theme";
+import Main from "@/app/_layout/Main";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -951,7 +1564,7 @@ async function RootLayout({
               <ScrollPositionProvider>
                 <div className="flex h-screen flex-col">
                   <TopNav currentTheme={theme} />
-                  <main className="overflow-y-auto px-4">{children}</main>
+                  <Main>{children}</Main>
                   <BottomNav />
                 </div>
               </ScrollPositionProvider>
@@ -964,51 +1577,6 @@ async function RootLayout({
 }
 
 export default RootLayout;
-
-
---- src/app/page.tsx ---
-"use client";
-
-import Button from "@/components/ui/Button";
-import Link from "next/link";
-import { useToast } from "@/components/ui/Toast/useToast";
-import FuckAccessToken from "@/app/_components/test/FuckAccessToken";
-import GetMe from "@/app/_components/test/GetMe";
-import LogoutMe from "@/app/_components/test/LogoutMe";
-
-function HomePage() {
-  const { toast } = useToast();
-
-  const handleButtonClick = () => {
-    toast({
-      title: "알림",
-      message: "작업이 완료되었습니다!",
-      type: "error",
-    });
-  };
-
-  return (
-    <div className="flex flex-col gap-2">
-      <Button>outline</Button>
-      <Button variant="link">link</Button>
-      <Button variant="ghost">ghost</Button>
-      <Button variant="active" onClick={handleButtonClick}>
-        active
-      </Button>
-      <Button variant="error" asChild>
-        <Link href="/search">go to page Search</Link>
-      </Button>
-      <Button variant="link" asChild>
-        <Link href="/login">go to page Login</Link>
-      </Button>
-      <FuckAccessToken />
-      <GetMe />
-      <LogoutMe />
-    </div>
-  );
-}
-
-export default HomePage;
 
 
 --- src/components/common/Field/ErrorMessage/ErrorMessage.tsx ---
@@ -1213,8 +1781,9 @@ export default NotFound;
 
 --- src/components/common/SongCard/SongCard.tsx ---
 import { SearchItems } from "@/types/search.type";
-import Image from "next/image";
 import Button from "@/components/ui/Button";
+import Picture from "@/components/ui/Picture";
+import Link from "next/link";
 
 interface SongCardProps {
   song: SearchItems;
@@ -1226,13 +1795,13 @@ function SongCard({ song }: SongCardProps) {
 
   return (
     <ul className="flex flex-row gap-1">
-      <Image
-        src={song.thumbnail_url || "asdf"}
-        alt={`${artist}'s ${title} Image`}
-        width={70}
-        height={70}
-        className="rounded-xl"
-      />
+      <div className="h-[70px] min-w-[70px]">
+        <Picture
+          src={song.thumbnail_url}
+          alt={`${artist}'s ${title} Image`}
+          className="h-full w-full rounded-xl object-fill"
+        />
+      </div>
       <div className="ml-3 flex w-full flex-col justify-between">
         <h1
           className="overflow-hidden text-ellipsis whitespace-nowrap text-text-h"
@@ -1251,8 +1820,8 @@ function SongCard({ song }: SongCardProps) {
           <p className="text-text-ky">KY {song.kumyoung_number}</p>
         </div>
       </div>
-      <Button variant="ghost" className="h-8 min-w-20 max-w-20 text-sm font-medium">
-        Add
+      <Button variant="ghost" className="h-8 min-w-20 max-w-20 text-sm font-medium" asChild>
+        <Link href={`/add-list/${song.song_id}`}>Add</Link>
       </Button>
     </ul>
   );
@@ -1327,6 +1896,140 @@ export default Button;
 export { default } from "./Button";
 
 
+--- src/components/ui/Dialog/Dialog.tsx ---
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { X } from "lucide-react";
+import { createPortal } from "react-dom";
+
+type DialogContextType = {
+  isOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+};
+
+const initialDialogContext: DialogContextType = {
+  isOpen: false,
+  onOpen: () => {},
+  onClose: () => {},
+};
+
+const DialogContext = createContext(initialDialogContext);
+const useDialogContext = () => useContext(DialogContext);
+
+interface DialogProps {
+  children: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+function Dialog({ children, open, onOpenChange }: DialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  const isControlled = open !== undefined;
+  const isOpen = isControlled ? open : internalOpen;
+
+  useEffect(() => {
+    if (isControlled) {
+      setInternalOpen(open);
+    }
+  }, [isControlled, open]);
+
+  const handleOpen = () => {
+    if (!isControlled) {
+      setInternalOpen(true);
+    }
+    onOpenChange?.(true);
+  };
+
+  const handleClose = () => {
+    if (!isControlled) {
+      setInternalOpen(false);
+    }
+    onOpenChange?.(false);
+  };
+
+  const value = {
+    isOpen,
+    onOpen: handleOpen,
+    onClose: handleClose,
+  };
+
+  return <DialogContext.Provider value={value}>{children}</DialogContext.Provider>;
+}
+
+interface TriggerProps {
+  children: React.ReactNode;
+  className?: string;
+  asChild?: boolean;
+}
+
+function Trigger({ children, className, asChild = false, ...props }: TriggerProps) {
+  const { onOpen } = useDialogContext();
+
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children, {
+      onClick: onOpen,
+      ...props,
+    } as React.HTMLAttributes<HTMLElement>);
+  }
+
+  return (
+    <button className={className} onClick={onOpen} {...props}>
+      {children}
+    </button>
+  );
+}
+
+interface ContentProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+function Content({ children, className }: ContentProps) {
+  const { isOpen, onClose } = useDialogContext();
+
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (isOpen && event.key === "Escape") onClose();
+    };
+
+    document.addEventListener("keydown", handleEscKey);
+    return () => document.removeEventListener("keydown", handleEscKey);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const handleOutClose = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
+      onClick={handleOutClose}
+    >
+      <div className={`${className || ""} relative w-full max-w-md rounded-xl bg-body-default p-4`}>
+        <div>{children}</div>
+        <button onClick={onClose} className="absolute right-4 top-4" aria-label="닫기">
+          <X className="stroke-icon-stroke" />
+        </button>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+Dialog.Trigger = Trigger;
+Dialog.Content = Content;
+export default Dialog;
+
+
+--- src/components/ui/Dialog/index.ts ---
+export { default } from "./Dialog";
+
+
 --- src/components/ui/Input/Input.tsx ---
 import React from "react";
 
@@ -1345,6 +2048,166 @@ export default Input;
 
 --- src/components/ui/Input/index.ts ---
 export { default } from "./Input";
+
+
+--- src/components/ui/Picture/Picture.tsx ---
+"use client";
+
+import React, { useState } from "react";
+import { StaticImageData } from "next/image";
+import errorImage from "@/assets/images/src_error.png";
+import notFoundImage from "@/assets/images/src_notfound.png";
+
+interface PictureProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src"> {
+  src?: StaticImageData | string | null;
+  fallbackSrc?: StaticImageData;
+  width?: number;
+  height?: number;
+}
+
+function Picture({ src, alt, fallbackSrc = errorImage, width, height, ...props }: PictureProps) {
+  const [currentSrc, setCurrentSrc] = useState<string>(() => {
+    if (!src) return notFoundImage.src;
+    return typeof src === "string" ? src : src.src;
+  });
+
+  const handleError = () => {
+    setCurrentSrc(fallbackSrc.src);
+  };
+
+  return (
+    <img
+      src={currentSrc}
+      alt={alt}
+      onError={handleError}
+      loading="lazy"
+      width={width}
+      height={height}
+      {...props}
+    />
+  );
+}
+
+export default Picture;
+
+
+--- src/components/ui/Picture/index.ts ---
+export { default } from "./Picture";
+
+
+--- src/components/ui/Sheet/Sheet.tsx ---
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { Minus } from "lucide-react";
+
+const initialValues = {
+  isOpen: false,
+  onOpen: () => {},
+  onClose: () => {},
+};
+
+const SheetContext = createContext(initialValues);
+const useSheetContext = () => useContext(SheetContext);
+
+interface SheetProps {
+  children: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+function Sheet({ children, open, onOpenChange }: SheetProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = open !== undefined;
+  const isOpen = isControlled ? open : internalOpen;
+
+  useEffect(() => {
+    if (isControlled) {
+      setInternalOpen(open);
+    }
+  }, [isControlled, open]);
+
+  const handleOpen = () => {
+    if (!isControlled) {
+      setInternalOpen(true);
+    }
+    onOpenChange?.(true);
+  };
+
+  const handleClose = () => {
+    if (!isControlled) {
+      setInternalOpen(false);
+    }
+    onOpenChange?.(false);
+  };
+
+  const value = {
+    isOpen,
+    onOpen: handleOpen,
+    onClose: handleClose,
+  };
+
+  return <SheetContext.Provider value={value}>{children}</SheetContext.Provider>;
+}
+
+interface TriggerProps {
+  children: React.ReactNode;
+  asChild?: boolean;
+  className?: string;
+}
+
+function Trigger({ children, asChild = false, className = "", ...props }: TriggerProps) {
+  const { onOpen } = useSheetContext();
+
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(children, {
+      onClick: onOpen,
+      ...props,
+    } as React.HTMLAttributes<HTMLElement>);
+  }
+
+  return (
+    <button className={className} onClick={onOpen} {...props}>
+      {children}
+    </button>
+  );
+}
+
+interface ContentProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+function Content({ children, className = "" }: ContentProps) {
+  const { isOpen, onClose } = useSheetContext();
+
+  if (!isOpen) return null;
+
+  const handleOutClose = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-40 bg-black/50" onClick={handleOutClose}>
+      <div
+        className={`${className} absolute inset-x-0 bottom-0 mx-auto w-full max-w-md rounded-xl bg-body-default p-4`}
+      >
+        <button onClick={onClose} className="absolute inset-x-0 top-0" aria-label="닫기">
+          <Minus className="mx-auto stroke-button-ghost" />
+        </button>
+        <div>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+Sheet.Trigger = Trigger;
+Sheet.Content = Content;
+export default Sheet;
+
+
+--- src/components/ui/Sheet/index.ts ---
+export { default } from "./Sheet";
 
 
 --- src/components/ui/Toast/Toast.tsx ---
@@ -1550,6 +2413,50 @@ export function useToast() {
 }
 
 
+--- src/hooks/useDragAndDrop.ts ---
+import { useMemo, useRef } from "react";
+import { UseMutateFunction } from "@tanstack/react-query";
+
+export function useDragAndDrop<T>(mutate: UseMutateFunction<any, Error, T, unknown>) {
+  const dragId = useRef<null | number>(null);
+  const dragOrder = useRef<null | number>(null);
+
+  const handleDragStart = (id: number) => (dragId.current = id);
+
+  const handleDragEnter = (order: number) => (dragOrder.current = order);
+
+  const handleDragEnd = (userId?: number) => {
+    if (dragId.current && dragOrder.current) {
+      const mutateData: any = {
+        listId: dragId.current,
+        newOrder: dragOrder.current,
+      };
+
+      if (userId !== undefined) {
+        mutateData.userId = userId;
+      }
+
+      mutate(mutateData);
+    }
+
+    dragId.current = null;
+    dragOrder.current = null;
+  };
+
+  const handleDragOver = (e: { preventDefault: () => void }) => e.preventDefault();
+
+  return useMemo(
+    () => ({
+      handleDragStart,
+      handleDragEnter,
+      handleDragEnd,
+      handleDragOver,
+    }),
+    []
+  );
+}
+
+
 --- src/hooks/useIntersectionObserver.ts ---
 import { RefObject, useEffect } from "react";
 
@@ -1719,22 +2626,24 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   async function (error) {
+    if (typeof window === "undefined") return;
+
     const originalRequest = error.config;
 
     if (originalRequest._retry >= MAX_RETRIES) {
-      await signOut({ redirect: true, callbackUrl: "/login" });
+      await signOut({ redirect: true, callbackUrl: "/login?toast=refresh_token_expires" });
       return Promise.reject(error);
     }
 
     if (error.response && error.response.status === 401) {
-      originalRequest._retry ??= 1;
+      originalRequest._retry ??= 0;
       originalRequest._retry++;
 
       try {
         const session = await getIsomorphicSession();
 
         if (!session?.user?.refreshToken) {
-          await signOut({ redirect: true, callbackUrl: "/login" });
+          await signOut({ redirect: true, callbackUrl: "/login?toast=refresh_token_expires" });
           return Promise.reject(error);
         }
 
@@ -1779,7 +2688,7 @@ export const authOptions: NextAuthOptions = {
 
           const response = await authApi.login(credentials);
 
-          const { user, accessToken, refreshToken } = response.data;
+          const { user, accessToken, refreshToken } = response;
 
           if (user && accessToken) {
             return {
@@ -1865,7 +2774,7 @@ export const authOptions: NextAuthOptions = {
   },
   // pages: {
   //   signIn: "/login",
-  //   error: "/login",
+  //   signOut: "/login?toast=true",
   // },
   secret: process.env.NEXTAUTH_SECRET,
 };
@@ -1908,6 +2817,34 @@ declare module "next-auth/jwt" {
 }
 
 
+--- src/lib/tanStackQuery/getServerQueryClient.ts ---
+import { defaultShouldDehydrateQuery, QueryClient } from "@tanstack/react-query";
+import { DEFAULT_QUERY_OPTIONS } from "./queryConfig";
+
+export function getServerQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        ...DEFAULT_QUERY_OPTIONS,
+      },
+      dehydrate: {
+        shouldDehydrateQuery: (query) =>
+          defaultShouldDehydrateQuery(query) || query.state.status === "pending",
+      },
+    },
+  });
+}
+
+
+--- src/lib/tanStackQuery/queryConfig.ts ---
+export const DEFAULT_QUERY_OPTIONS = {
+  staleTime: 5 * 60 * 1000,
+  gcTime: 10 * 60 * 1000,
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
+};
+
+
 --- src/lib/zod/auth.ts ---
 import { z } from "zod";
 
@@ -1945,13 +2882,16 @@ import { useMutation } from "@tanstack/react-query";
 import { AccountRequest } from "@/types/auth.type";
 import { authApi } from "@/api/auth";
 import { useToast } from "@/components/ui/Toast/useToast";
+import { useRouter } from "next/navigation";
 
 export function useAccountMutation() {
   const { toast } = useToast();
+  const router = useRouter();
 
   return useMutation({
     mutationFn: (data: AccountRequest) => authApi.account(data),
     onSuccess: () => {
+      router.push("/login");
       toast({
         title: "Account Login Success",
         message: "Account Login Successfully Great!",
@@ -1974,17 +2914,18 @@ import { useMutation } from "@tanstack/react-query";
 import { LoginRequest } from "@/types/auth.type";
 import { signIn } from "next-auth/react";
 import { useToast } from "@/components/ui/Toast/useToast";
+import { useRouter } from "next/navigation";
 
 export function useLoginMutation() {
   const { toast } = useToast();
+  const router = useRouter();
 
   return useMutation({
     mutationFn: async (data: LoginRequest) => {
       const result = await signIn("credentials", {
         email: data.email,
         password: data.password,
-        redirect: true,
-        callbackUrl: "/",
+        redirect: false,
       });
 
       if (result?.error) {
@@ -1992,6 +2933,7 @@ export function useLoginMutation() {
       }
     },
     onSuccess: () => {
+      router.back();
       toast({
         title: "Login Success",
         message: "Login Successfully Great!",
@@ -2037,10 +2979,334 @@ export function useLogoutMutation() {
 }
 
 
+--- src/query/favorite-lists/mutations/useAddSongToListMutation.ts ---
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { favoriteListsApi } from "@/api/favorite-lists";
+import { AddSongToListRequest } from "@/types/favorite-list.type";
+import { useToast } from "@/components/ui/Toast/useToast";
+import { getFavoriteListSongsKey } from "@/query/favorite-lists";
+import axios, { AxiosError } from "axios";
+
+export function useAddSongToListMutation(listId: number) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: AddSongToListRequest) => favoriteListsApi.addSongToList(listId, data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: getFavoriteListSongsKey(listId) });
+      toast({
+        title: "Song Added To List Successfully",
+        message: data.message,
+        type: "success",
+      });
+    },
+    onError: (error) => {
+      if (axios.isAxiosError(error)) {
+        const axiosError = error as AxiosError<{
+          message: string;
+          error: string;
+          statusCode: number;
+        }>;
+        const axiosErrorMessage = axiosError.response?.data?.message;
+
+        toast({
+          title: "Error",
+          message: axiosErrorMessage || error.message,
+          type: "error",
+        });
+      } else {
+        // 일반 에러인 경우
+        toast({
+          title: "Error",
+          message: error instanceof Error ? error.message : "Failed To Add Song To List",
+          type: "error",
+        });
+      }
+    },
+  });
+}
+
+
+--- src/query/favorite-lists/mutations/useCreateFavoriteListMutation.ts ---
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { favoriteListsApi } from "@/api/favorite-lists";
+import { CreateFavoriteListRequest } from "@/types/favorite-list.type";
+import { useToast } from "@/components/ui/Toast/useToast";
+import { getFavoriteListsKey } from "@/query/favorite-lists";
+
+export function useCreateFavoriteListMutation() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: CreateFavoriteListRequest) => favoriteListsApi.createList(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getFavoriteListsKey() });
+      toast({
+        title: "My List Created Successfully",
+        message: "My List Created Successfully",
+        type: "success",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        message: error instanceof Error ? error.message : "Failed To Create My List",
+        type: "error",
+      });
+    },
+  });
+}
+
+
+--- src/query/favorite-lists/mutations/useDeleteFavoriteListMutation.ts ---
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { favoriteListsApi } from "@/api/favorite-lists";
+import { useToast } from "@/components/ui/Toast/useToast";
+import { getFavoriteListsKey } from "@/query/favorite-lists";
+
+export function useDeleteFavoriteListMutation() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (listId: number) => favoriteListsApi.deleteList(listId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getFavoriteListsKey() });
+      toast({
+        title: "My List Deleted Successfully",
+        message: "My List Deleted Successfully",
+        type: "success",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        message: error instanceof Error ? error.message : "Failed To Delete List",
+        type: "error",
+      });
+    },
+  });
+}
+
+
+--- src/query/favorite-lists/mutations/useRemoveSongFromListMutation.ts ---
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { favoriteListsApi } from "@/api/favorite-lists";
+import { useToast } from "@/components/ui/Toast/useToast";
+import { getFavoriteListSongsKey } from "@/query/favorite-lists";
+
+export function useRemoveSongFromListMutation(listId: number) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (favoriteId: number) => favoriteListsApi.removeSongFromList(favoriteId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: getFavoriteListSongsKey(listId) });
+      toast({
+        title: "Song Removed From List Successfully",
+        message: data.message,
+        type: "success",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        message: error instanceof Error ? error.message : "Failed To Remove Song From List",
+        type: "error",
+      });
+    },
+  });
+}
+
+
+--- src/query/favorite-lists/mutations/useReorderFavoriteList.ts ---
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/Toast/useToast";
+import { ReorderListRequest } from "@/types/favorite-list.type";
+import { favoriteListsApi } from "@/api/favorite-lists";
+import { getFavoriteListsKey } from "@/query/favorite-lists";
+
+export function useReorderFavoriteList() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: ReorderListRequest) => favoriteListsApi.reorderList(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getFavoriteListsKey() });
+      toast({
+        title: "My List Order Changed Successfully",
+        message: "My List Order Changed Successfully",
+        type: "success",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        message: error instanceof Error ? error.message : "Failed To Change My List Order",
+        type: "error",
+      });
+    },
+  });
+}
+
+
+--- src/query/favorite-lists/mutations/useReorderSongMutation.ts ---
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { favoriteListsApi } from "@/api/favorite-lists";
+import { ReorderSongRequest } from "@/types/favorite-list.type";
+import { useToast } from "@/components/ui/Toast/useToast";
+import { getFavoriteListSongsKey } from "@/query/favorite-lists";
+
+export function useReorderSongMutation(listId: number) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: ReorderSongRequest) => favoriteListsApi.reorderSong(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getFavoriteListSongsKey(listId) });
+      toast({
+        title: "Song Order Changed Successfully",
+        message: "Song Order Changed Successfully",
+        type: "success",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        message: error instanceof Error ? error.message : "Failed To Change Song Order",
+        type: "error",
+      });
+    },
+  });
+}
+
+
+--- src/query/favorite-lists/mutations/useUpdateFavoriteListMutation.ts ---
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { favoriteListsApi } from "@/api/favorite-lists";
+import { UpdateFavoriteListRequest } from "@/types/favorite-list.type";
+import { useToast } from "@/components/ui/Toast/useToast";
+import { getFavoriteListKey, getFavoriteListsKey } from "@/query/favorite-lists";
+
+export function useUpdateFavoriteListMutation(listId: number) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (data: UpdateFavoriteListRequest) => favoriteListsApi.updateList(listId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: getFavoriteListsKey() });
+      queryClient.invalidateQueries({ queryKey: getFavoriteListKey(listId) });
+
+      toast({
+        title: "My List Updated Successfully",
+        message: "My List Updated Successfully",
+        type: "success",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        message: error instanceof Error ? error.message : "Failed To Update My List",
+        type: "error",
+      });
+    },
+  });
+}
+
+
+--- src/query/favorite-lists/options/favoriteListsOption.ts ---
+import { queryOptions } from "@tanstack/react-query";
+import { getFavoriteListsKey } from "@/query/favorite-lists";
+import { favoriteListsApi } from "@/api/favorite-lists";
+
+export const favoriteListsOption = queryOptions({
+  queryKey: getFavoriteListsKey(),
+  queryFn: () => favoriteListsApi.getLists(),
+});
+
+
+--- src/query/favorite-lists/queries/useFavoriteListSongsQuery.ts ---
+import { useQuery } from "@tanstack/react-query";
+import { favoriteListsApi } from "@/api/favorite-lists";
+import { getFavoriteListSongsKey } from "@/query/favorite-lists";
+
+export function useFavoriteListSongsQuery(listId: number) {
+  return useQuery({
+    queryKey: getFavoriteListSongsKey(listId),
+    queryFn: () => favoriteListsApi.getListSongs(listId),
+    enabled: !!listId,
+  });
+}
+
+
+--- src/query/favorite-lists/queries/useFavoriteListsQuery.ts ---
+import { useQuery } from "@tanstack/react-query";
+import { favoriteListsApi } from "@/api/favorite-lists";
+import { getFavoriteListsKey } from "@/query/favorite-lists";
+
+export function useFavoriteListsQuery() {
+  return useQuery({
+    queryKey: getFavoriteListsKey(),
+    queryFn: () => favoriteListsApi.getLists(),
+  });
+}
+
+
+--- src/query/favorite-lists/index.ts ---
+export * from "./key";
+
+export * from "./queries/useFavoriteListsQuery";
+export * from "./queries/useFavoriteListSongsQuery";
+
+export * from "./mutations/useCreateFavoriteListMutation";
+export * from "./mutations/useUpdateFavoriteListMutation";
+export * from "./mutations/useDeleteFavoriteListMutation";
+export * from "./mutations/useReorderFavoriteList";
+export * from "./mutations/useAddSongToListMutation";
+export * from "./mutations/useRemoveSongFromListMutation";
+export * from "./mutations/useReorderSongMutation";
+
+
+--- src/query/favorite-lists/key.ts ---
+export const getFavoriteListsKey = () => ["favorite-lists"];
+export const getFavoriteListSongsKey = (listId: number) => ["favorite-list-songs", listId];
+export const getFavoriteListKey = (listId: number) => ["favorite-list", listId];
+
+
+--- src/query/search/options/searchQueryOption.ts ---
+import { getSearchQueryKey } from "@/query/search";
+import { searchApi } from "@/api/search";
+import { queryOptions } from "@tanstack/react-query";
+import { SearchPanelParams } from "@/types/search.type";
+
+export const searchQueryOption = (params: SearchPanelParams) =>
+  queryOptions({
+    queryKey: getSearchQueryKey({
+      text: params.text || "",
+      searchType: params.searchType || "both",
+      sort: params.sort || "popular",
+    }),
+    queryFn: () =>
+      searchApi({
+        text: params.text || "",
+        searchType: params.searchType || "both",
+        sort: params.sort || "popular",
+        page: 1,
+        limit: 10,
+      }),
+  });
+
+
 --- src/query/search/queries/useSearchQuery.ts ---
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { getSearchQueryKey } from "@/query/search/key";
 import { searchApi } from "@/api/search";
+import { getSearchQueryKey } from "@/query/search";
 import { SearchPanelParams } from "@/types/search.type";
 
 export type SearchQueryParams = SearchPanelParams & { text: string };
@@ -2061,7 +3327,7 @@ export function useSearchQuery(params: SearchQueryParams) {
       }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
-      const { total, page, limit } = lastPage.data;
+      const { total, page, limit } = lastPage;
       const loadedItems = page * limit;
 
       return loadedItems < total ? page + 1 : undefined;
@@ -2069,6 +3335,12 @@ export function useSearchQuery(params: SearchQueryParams) {
     enabled: text?.length > 0,
   });
 }
+
+
+--- src/query/search/index.ts ---
+export * from "./key";
+
+export * from "./queries/useSearchQuery";
 
 
 --- src/query/search/key.ts ---
@@ -2113,7 +3385,97 @@ export interface RefreshResponse {
 }
 
 
+--- src/types/favorite-list.type.ts ---
+import { StaticImageData } from "next/image";
+
+export interface FavoriteList {
+  id: number;
+  user_id: number;
+  name: string;
+  order: number;
+  image_url: StaticImageData | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface FavoriteListSong {
+  id: number;
+  list_id: number;
+  song_id: number;
+  order: number;
+  title_ko: string;
+  title_ja?: string;
+  title_en?: string;
+  artist_ko?: string;
+  artist_ja?: string;
+  artist_en?: string;
+  thumbnail_url: StaticImageData | null;
+  tj_number?: string;
+  kumyoung_number?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateFavoriteListRequest {
+  name: string;
+}
+
+export interface UpdateFavoriteListRequest {
+  name?: string;
+  image_url?: string;
+}
+
+export interface AddSongToListRequest {
+  songId: number;
+}
+
+export interface ReorderListRequest {
+  userId: number;
+  listId: number;
+  newOrder: number;
+}
+
+export interface ReorderSongRequest {
+  favoriteId: number;
+  newOrder: number;
+}
+
+export type GetFavoriteListsResponse = FavoriteList[];
+
+export interface GetFavoriteListSongsResponse {
+  items: FavoriteListSong[];
+}
+
+export type CreateFavoriteListResponse = FavoriteList;
+
+export type UpdateFavoriteListResponse = FavoriteList;
+
+export interface DeleteFavoriteListResponse {
+  message: string;
+}
+
+export interface AddSongToListResponse {
+  favorite_id: number;
+  message: string;
+}
+
+export interface RemoveSongFromListResponse {
+  message: string;
+}
+
+export interface ReorderListResponse {
+  message: string;
+}
+
+export interface ReorderSongResponse {
+  message: string;
+}
+
+
 --- src/types/search.type.ts ---
+import { StaticImageData } from "next/image";
+
 export type SearchType = "both" | "artist" | "title" | "lyrics";
 export type Sort = "latest" | "popular";
 
@@ -2135,7 +3497,7 @@ export interface SearchItems {
   title_en?: string;
   artist_id: number;
   release_date?: string;
-  thumbnail_url: string | null;
+  thumbnail_url: StaticImageData | null;
   popularity_score: number;
   created_at: string;
   updated_at: string;
@@ -2193,7 +3555,7 @@ export async function setTheme(theme: Theme) {
     value: theme,
     httpOnly: true,
     path: "/",
-    maxAge: 60 * 60 * 24 * 365, // 1년
+    maxAge: 60 * 60 * 24 * 365,
   });
 }
 

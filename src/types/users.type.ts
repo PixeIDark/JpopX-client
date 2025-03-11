@@ -1,4 +1,6 @@
-interface MeResponse {
+import { StaticImageData } from "next/image";
+
+export interface MeResponse {
   id: number;
   name: string;
   email: string;
@@ -7,4 +9,19 @@ interface MeResponse {
   updated_at: string;
 }
 
-type AllResponse = MeResponse[];
+export type AllResponse = MeResponse[];
+
+export interface MeModifyRequest {
+  name?: string;
+  password?: string;
+  profile_image_url?: StaticImageData | string | null;
+}
+
+export interface MeModifyResponse {
+  id: number;
+  name: string;
+  email: string;
+  profile_image_url: StaticImageData | string | null;
+  created_at: string;
+  updated_at: string;
+}
