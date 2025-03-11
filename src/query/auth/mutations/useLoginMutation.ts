@@ -2,18 +2,20 @@ import { useMutation } from "@tanstack/react-query";
 import { LoginRequest } from "@/types/auth.type";
 import { signIn } from "next-auth/react";
 import { useToast } from "@/components/ui/Toast/useToast";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 export function useLoginMutation() {
   const { toast } = useToast();
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   return useMutation({
     mutationFn: async (data: LoginRequest) => {
       const result = await signIn("credentials", {
         email: data.email,
         password: data.password,
-        redirect: false,
+        redirect: true,
+        callbackUrl,
       });
 
       if (result?.error) {
@@ -21,7 +23,6 @@ export function useLoginMutation() {
       }
     },
     onSuccess: () => {
-      router.push("/");
       toast({
         title: "Login Success",
         message: "Login Successfully Great!",

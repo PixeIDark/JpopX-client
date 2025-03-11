@@ -3,6 +3,7 @@ src
 │   ├── auth.ts
 │   ├── favorite-lists.ts
 │   ├── search.ts
+│   ├── upload.ts
 │   └── users.ts
 ├── app
 │   ├── (auth)
@@ -19,38 +20,75 @@ src
 │   │       │       └── index.ts
 │   │       └── page.tsx
 │   ├── (protected)
-│   │   └── (lists)
-│   │       ├── _layout
-│   │       │   └── CreateListButton
-│   │       │       ├── CreateListButton.tsx
+│   │   ├── (lists)
+│   │   │   ├── _layout
+│   │   │   │   └── CreateListButton
+│   │   │   │       ├── CreateListButton.tsx
+│   │   │   │       ├── _hooks
+│   │   │   │       │   └── useCreateListSubmit.ts
+│   │   │   │       └── index.ts
+│   │   │   ├── add-list
+│   │   │   │   └── [songId]
+│   │   │   │       ├── _components
+│   │   │   │       │   └── AddToList
+│   │   │   │       │       ├── AddToList.tsx
+│   │   │   │       │       ├── CheckFavoriteList
+│   │   │   │       │       │   ├── CheckFavoriteList.tsx
+│   │   │   │       │       │   └── index.ts
+│   │   │   │       │       ├── _hooks
+│   │   │   │       │       │   └── useAddToListToggle.ts
+│   │   │   │       │       └── index.ts
+│   │   │   │       └── page.tsx
+│   │   │   ├── layout.tsx
+│   │   │   └── mylist
+│   │   │       ├── [listId]
+│   │   │       │   ├── _components
+│   │   │       │   │   └── FavoriteSongList
+│   │   │       │   │       ├── FavoirteSongCard
+│   │   │       │   │       │   ├── FavoirteSongCard.tsx
+│   │   │       │   │       │   ├── RemoveSongButton
+│   │   │       │   │       │   │   ├── RemoveSongButton.tsx
+│   │   │       │   │       │   │   └── index.ts
+│   │   │       │   │       │   └── index.ts
+│   │   │       │   │       ├── FavoriteSongList.tsx
+│   │   │       │   │       └── index.ts
+│   │   │       │   └── page.tsx
+│   │   │       ├── _components
+│   │   │       │   └── FavoriteList
+│   │   │       │       ├── FavoriteList.tsx
+│   │   │       │       ├── ListControlled
+│   │   │       │       │   ├── DeleteList
+│   │   │       │       │   │   ├── DeleteList.tsx
+│   │   │       │       │   │   └── index.ts
+│   │   │       │       │   ├── ListControlled.tsx
+│   │   │       │       │   ├── ModifyList
+│   │   │       │       │   │   ├── ModifyList.tsx
+│   │   │       │       │   │   ├── _hooks
+│   │   │       │       │   │   │   └── useModifyList.ts
+│   │   │       │       │   │   └── index.ts
+│   │   │       │       │   └── index.ts
+│   │   │       │       └── index.ts
+│   │   │       └── page.tsx
+│   │   └── profile
+│   │       ├── _components
+│   │       │   └── ProfileImage
+│   │       │       ├── ProfileImage.tsx
 │   │       │       ├── _hooks
-│   │       │       │   └── useCreateListSubmit.ts
+│   │       │       │   └── useProfileImage.ts
 │   │       │       └── index.ts
-│   │       ├── add-list
-│   │       │   └── [songId]
-│   │       │       ├── _components
-│   │       │       │   └── AddToList
-│   │       │       │       ├── AddToList.tsx
-│   │       │       │       ├── CheckFavoriteList
-│   │       │       │       │   ├── CheckFavoriteList.tsx
-│   │       │       │       │   └── index.ts
-│   │       │       │       ├── _hooks
-│   │       │       │       │   └── useAddToListToggle.ts
-│   │       │       │       └── index.ts
-│   │       │       └── page.tsx
-│   │       ├── layout.tsx
-│   │       └── mylist
-│   │           ├── [listId]
-│   │           │   └── page.tsx
-│   │           ├── _components
-│   │           │   └── FavoriteList
-│   │           │       ├── FavoriteList.tsx
-│   │           │       ├── ListControlled
-│   │           │       │   ├── ListControlled.tsx
-│   │           │       │   └── index.ts
-│   │           │       └── index.ts
-│   │           └── page.tsx
+│   │       ├── change-name
+│   │       │   └── page.tsx
+│   │       ├── change-password
+│   │       │   └── page.tsx
+│   │       ├── page.tsx
+│   │       └── verification
+│   │           └── [changeType]
+│   │               └── page.tsx
 │   ├── (public)
+│   │   ├── _components
+│   │   │   └── PopularityList
+│   │   │       ├── PopularityList.tsx
+│   │   │       └── index.ts
 │   │   ├── page.tsx
 │   │   └── search
 │   │       ├── _components
@@ -78,11 +116,6 @@ src
 │   │       │       │   └── useSearch.ts
 │   │       │       └── index.ts
 │   │       └── page.tsx
-│   ├── _components
-│   │   └── test
-│   │       ├── FuckAccessToken.tsx
-│   │       ├── GetMe.tsx
-│   │       └── LogoutMe.tsx
 │   ├── _layout
 │   │   ├── BottomNav
 │   │   │   ├── BottomNav.tsx
@@ -112,6 +145,12 @@ src
 │   ├── globals.css
 │   ├── layout.tsx
 │   └── test
+│       ├── _components
+│       │   └── test
+│       │       ├── FuckAccessToken.tsx
+│       │       ├── GetMe.tsx
+│       │       └── LogoutMe.tsx
+│       └── page.tsx
 ├── assets
 │   ├── icons
 │   │   ├── home
@@ -211,24 +250,37 @@ src
 │   │   │   ├── useReorderSongMutation.ts
 │   │   │   └── useUpdateFavoriteListMutation.ts
 │   │   ├── options
+│   │   │   ├── favoritListSongsOption.ts
 │   │   │   └── favoriteListsOption.ts
 │   │   └── queries
 │   │       ├── useFavoriteListSongsQuery.ts
 │   │       └── useFavoriteListsQuery.ts
-│   └── search
+│   ├── search
+│   │   ├── index.ts
+│   │   ├── key.ts
+│   │   ├── options
+│   │   │   └── searchQueryOption.ts
+│   │   └── queries
+│   │       └── useSearchQuery.ts
+│   └── users
 │       ├── index.ts
-│       ├── key.ts
-│       ├── options
-│       │   └── searchQueryOption.ts
-│       └── queries
-│           └── useSearchQuery.ts
+│       └── mutations
+│           ├── useDeleteAccountMutation.ts
+│           ├── useUpdateImageMutation.ts
+│           ├── useUpdateNameMutation.ts
+│           ├── useUpdatePasswordMutation.ts
+│           └── useVerifyPasswordMutation.ts
 ├── types
 │   ├── auth.type.ts
 │   ├── favorite-list.type.ts
 │   ├── search.type.ts
 │   └── users.type.ts
 └── utils
+    ├── decrypt.ts
+    ├── encrypt.ts
     ├── getIsomorphicSession.ts
+    ├── getRandomInteger.ts
+    ├── getTimeAgo.ts
     └── theme.ts
 
-94 directories, 138 files
+113 directories, 171 files

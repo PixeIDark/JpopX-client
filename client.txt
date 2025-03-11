@@ -13,10 +13,12 @@ const url = "auth";
 
 export const authApi = {
   account: (data: AccountRequest) => axiosInstance.post<AccountResponse>(`${url}/signup`, data),
+
   login: async (data: LoginRequest) => {
     const response = await axiosInstance.post<LoginResponse>(`${url}/login`, data);
     return response.data;
   },
+
   logout: async (accessToken: string) => {
     try {
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
@@ -31,6 +33,7 @@ export const authApi = {
       return Promise.reject(error);
     }
   },
+  
   refresh: async (refreshToken: RefreshRequest): Promise<RefreshResponse> => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/${url}/refresh`, {
@@ -157,15 +160,55 @@ export const searchApi = async (params: SearchRequest) => {
 };
 
 
+--- src/api/upload.ts ---
+import { axiosInstance } from "@/lib/axios/instance";
+
+interface UploadResponse {
+  url: string;
+}
+
+export const upload = async (file: File) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const response = await axiosInstance.post<UploadResponse>("/upload/single", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error("Failed Image upload:", error);
+    return Promise.reject(error);
+  }
+};
+
+
 --- src/api/users.ts ---
 import { axiosInstance } from "@/lib/axios/instance";
+import { AllResponse, MeModifyRequest, MeModifyResponse, MeResponse } from "@/types/users.type";
 
 const url = "users";
 
 export const usersApi = {
   all: () => axiosInstance.get<AllResponse>(`${url}`),
+
   me: async () => {
     const response = await axiosInstance.get<MeResponse>(`${url}/me`);
+    return response.data;
+  },
+
+  modify: async (data: MeModifyRequest) => {
+    if (!data) return;
+
+    const response = await axiosInstance.put<MeModifyResponse>(`${url}/me`, data);
+    return response.data;
+  },
+
+  deleteAccount: async () => {
+    const response = await axiosInstance.delete(`${url}/me`);
     return response.data;
   },
 };
@@ -495,9 +538,7 @@ function AddToList({ list, songId }: FavoriteListProps) {
         <Picture
           src={list.image_url}
           alt={`${list.name}'s image`}
-          width={56}
-          height={56}
-          className="rounded-lg"
+          className="h-14 w-14 rounded-lg"
         />
         <div className="a flex flex-col justify-center">
           <h1 className="text-left text-base text-text-h">{list.name}</h1>
@@ -519,13 +560,13 @@ export { default } from "./AddToList";
 --- src/app/(protected)/(lists)/add-list/[songId]/page.tsx ---
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { favoriteListsOption } from "@/query/favorite-lists/options/favoriteListsOption";
 import { use } from "react";
 import AddToList from "@/app/(protected)/(lists)/add-list/[songId]/_components/AddToList";
 
 function AddListPage({ params }: { params: Promise<{ songId: string }> }) {
-  const { data: lists } = useQuery(favoriteListsOption);
+  const { data: lists } = useSuspenseQuery(favoriteListsOption);
   const { songId } = use(params);
 
   if (!lists || !songId) return null;
@@ -544,16 +585,321 @@ function AddListPage({ params }: { params: Promise<{ songId: string }> }) {
 export default AddListPage;
 
 
+--- src/app/(protected)/(lists)/mylist/[listId]/_components/FavoriteSongList/FavoirteSongCard/RemoveSongButton/RemoveSongButton.tsx ---
+import { useRemoveSongFromListMutation } from "@/query/favorite-lists";
+import Button from "@/components/ui/Button";
+
+interface RemoveSongButtonProps {
+  listId: number;
+  favoriteId: number;
+}
+
+function RemoveSongButton({ listId, favoriteId }: RemoveSongButtonProps) {
+  const { mutate: removeSongFromListMutate } = useRemoveSongFromListMutation(listId);
+
+  const handleRemoveSong = () => removeSongFromListMutate(favoriteId);
+
+  return (
+    <Button
+      onClick={handleRemoveSong}
+      variant="ghost"
+      className="h-8 min-w-20 max-w-20 text-sm font-medium"
+    >
+      Remove
+    </Button>
+  );
+}
+
+export default RemoveSongButton;
+
+
+--- src/app/(protected)/(lists)/mylist/[listId]/_components/FavoriteSongList/FavoirteSongCard/RemoveSongButton/index.ts ---
+export { default } from "./RemoveSongButton";
+
+
+--- src/app/(protected)/(lists)/mylist/[listId]/_components/FavoriteSongList/FavoirteSongCard/FavoirteSongCard.tsx ---
+import Picture from "@/components/ui/Picture";
+import { FavoriteListSong } from "@/types/favorite-list.type";
+import RemoveSongButton from "@/app/(protected)/(lists)/mylist/[listId]/_components/FavoriteSongList/FavoirteSongCard/RemoveSongButton";
+import React from "react";
+
+interface DragAndDropHandler {
+  draggedItemId: number | null;
+  handleDragStart: (id: number, order: number) => void;
+  handleDragEnter: (order: number) => void;
+  handleDragEnd: (userId: number) => void;
+  handleDragOver: (e: React.DragEvent) => void;
+}
+
+interface SongCardProps {
+  song: FavoriteListSong;
+  listId: number;
+  dragAndDropHandler: DragAndDropHandler;
+}
+
+function FavoriteSongCard({ song, listId, dragAndDropHandler }: SongCardProps) {
+  const { draggedItemId, handleDragEnter, handleDragOver, handleDragStart, handleDragEnd } =
+    dragAndDropHandler;
+  const title = song.title_ko || song.title_ja;
+  const artist = song.artist_ko || song.artist_ja;
+
+  const isDragging = draggedItemId === listId;
+
+  return (
+    <ul
+      draggable={true}
+      onDragStart={() => handleDragStart(song.id, song.order)}
+      onDragEnter={() => handleDragEnter(song.order)}
+      onDragEnd={() => handleDragEnd(-1)}
+      onDragOver={handleDragOver}
+      className={`flex flex-row gap-1 py-3 transition-colors duration-200 ${isDragging ? "bg-button-ghost opacity-50" : ""} ${draggedItemId !== null && !isDragging ? "border-t-2 border-dashed border-solid-default" : ""} \`}`}
+    >
+      <div className="h-[70px] min-w-[70px]">
+        <Picture
+          src={song.thumbnail_url}
+          alt={`${artist}'s ${title} Image`}
+          className="h-full w-full rounded-xl object-fill"
+        />
+      </div>
+      <div className="ml-3 flex w-full flex-col justify-between">
+        <h1
+          className="overflow-hidden text-ellipsis whitespace-nowrap text-text-h"
+          style={{ maxWidth: "calc(152px + (187 - 152) * ((100vw - 365px) / 35))" }}
+        >
+          {title}
+        </h1>
+        <p
+          className="overflow-hidden text-ellipsis whitespace-nowrap text-sm text-text-p"
+          style={{ maxWidth: "calc(152px + (187 - 152) * ((100vw - 365px) / 35))" }}
+        >
+          {artist}
+        </p>
+        <div className="flex gap-2 text-sm">
+          <p className="w-16 text-text-tj">TJ {song.tj_number}</p>
+          <p className="text-text-ky">KY {song.kumyoung_number}</p>
+        </div>
+      </div>
+      <RemoveSongButton listId={listId} favoriteId={song.id} />
+    </ul>
+  );
+}
+
+export default FavoriteSongCard;
+
+
+--- src/app/(protected)/(lists)/mylist/[listId]/_components/FavoriteSongList/FavoirteSongCard/index.ts ---
+export { default } from "./FavoirteSongCard";
+
+
+--- src/app/(protected)/(lists)/mylist/[listId]/_components/FavoriteSongList/FavoriteSongList.tsx ---
+"use client";
+
+import { useFavoriteListSongsQuery, useReorderSongMutation } from "@/query/favorite-lists";
+import FavoriteSongCard from "@/app/(protected)/(lists)/mylist/[listId]/_components/FavoriteSongList/FavoirteSongCard";
+import { useDragAndDrop } from "@/hooks/useDragAndDrop";
+
+interface FavoriteSongListProps {
+  listId: number;
+}
+
+function FavoriteSongList({ listId }: FavoriteSongListProps) {
+  const { data: list } = useFavoriteListSongsQuery(listId);
+  const { mutate: reorderSongMutate } = useReorderSongMutation(listId);
+  const dragAndDropHandler = useDragAndDrop(reorderSongMutate);
+
+  if (!list) return null;
+
+  return (
+    <li className="flex flex-col">
+      {list.map((song) => (
+        <FavoriteSongCard
+          key={song.id}
+          song={song}
+          listId={listId}
+          dragAndDropHandler={dragAndDropHandler}
+        />
+      ))}
+    </li>
+  );
+}
+
+export default FavoriteSongList;
+
+
+--- src/app/(protected)/(lists)/mylist/[listId]/_components/FavoriteSongList/index.ts ---
+export { default } from "./FavoriteSongList";
+
+
 --- src/app/(protected)/(lists)/mylist/[listId]/page.tsx ---
+import { getServerQueryClient } from "@/lib/tanStackQuery/getServerQueryClient";
+import { favoriteListSongsOption } from "@/query/favorite-lists/options/favoritListSongsOption";
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import FavoriteSongList from "@/app/(protected)/(lists)/mylist/[listId]/_components/FavoriteSongList";
+
 async function ListIdPage({ params }: { params: Promise<{ listId: string }> }) {
   const { listId } = await params;
+  const parsedListId = parseInt(listId);
 
-  console.log(listId);
+  const queryClient = getServerQueryClient();
 
-  return <div>어서오게나.. 상세페이지일세</div>;
+  await queryClient.prefetchQuery(favoriteListSongsOption(parsedListId));
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <FavoriteSongList listId={parsedListId} />
+    </HydrationBoundary>
+  );
 }
 
 export default ListIdPage;
+
+
+--- src/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled/DeleteList/DeleteList.tsx ---
+import Button from "@/components/ui/Button";
+import { useDeleteFavoriteListMutation } from "@/query/favorite-lists";
+
+interface DeleteListProps {
+  listId: number;
+  onClose: () => void;
+}
+
+function DeleteList({ listId, onClose }: DeleteListProps) {
+  const { mutate: deleteFavoriteList } = useDeleteFavoriteListMutation();
+
+  const handleDelete = () => {
+    deleteFavoriteList(listId);
+    onClose();
+  };
+
+  return (
+    <Button onClick={handleDelete} variant="link">
+      Delete
+    </Button>
+  );
+}
+
+export default DeleteList;
+
+
+--- src/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled/DeleteList/index.ts ---
+export { default } from "./DeleteList";
+
+
+--- src/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled/ModifyList/_hooks/useModifyList.ts ---
+import { useUpdateFavoriteListMutation } from "@/query/favorite-lists";
+import React, { useRef, useState } from "react";
+import { StaticImageData } from "next/image";
+
+interface ModifyListProps {
+  listId: number;
+  image: StaticImageData | string | null;
+  onClose: () => void;
+}
+
+export function useModifyList({ listId, image, onClose }: ModifyListProps) {
+  const { mutate: updateFavoriteList } = useUpdateFavoriteListMutation(listId);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const newPreviewUrl = URL.createObjectURL(file);
+
+      setSelectedFile(file);
+      setPreviewUrl(newPreviewUrl);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    onClose();
+
+    const name = inputRef.current?.value;
+    if (!name || !name.length) return;
+
+    const tempImageUrl = selectedFile ? URL.createObjectURL(selectedFile) : image;
+
+    updateFavoriteList({
+      name,
+      image_url: tempImageUrl,
+      isOptimistic: true,
+      file: selectedFile,
+    });
+  };
+
+  return { handleImageClick, handleFileChange, handleSubmit, previewUrl, fileInputRef, inputRef };
+}
+
+
+--- src/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled/ModifyList/ModifyList.tsx ---
+import React from "react";
+import Dialog from "@/components/ui/Dialog";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
+import { StaticImageData } from "next/image";
+import Picture from "@/components/ui/Picture";
+import { useModifyList } from "@/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled/ModifyList/_hooks/useModifyList";
+
+interface ModifyListProps {
+  listId: number;
+  listName: string;
+  image: StaticImageData | string | null;
+  onClose: () => void;
+}
+
+function ModifyList({ listId, image, listName, onClose }: ModifyListProps) {
+  const { handleImageClick, handleFileChange, handleSubmit, previewUrl, fileInputRef, inputRef } =
+    useModifyList({
+      listId,
+      image,
+      onClose,
+    });
+
+  return (
+    <Dialog>
+      <Dialog.Trigger asChild>
+        <Button variant="link">Modify</Button>
+      </Dialog.Trigger>
+      <Dialog.Content>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <h1 className="mx-auto">Change List</h1>
+          <button type="button" className="mx-auto" onClick={handleImageClick}>
+            <Picture
+              src={previewUrl || image}
+              alt="리스트 이미지"
+              className="h-[200] w-[200] rounded-lg"
+            />
+            <p className="text-text-p">이미지 변경</p>
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept="image/*"
+            onChange={handleFileChange}
+          />
+          <Input ref={inputRef} type="text" defaultValue={listName} />
+          <Button type="submit" variant="active">
+            Save
+          </Button>
+        </form>
+      </Dialog.Content>
+    </Dialog>
+  );
+}
+
+export default ModifyList;
+
+
+--- src/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled/ModifyList/index.ts ---
+export { default } from "./ModifyList";
 
 
 --- src/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled/ListControlled.tsx ---
@@ -561,60 +907,33 @@ export default ListIdPage;
 
 import { EllipsisVertical } from "lucide-react";
 import Sheet from "@/components/ui/Sheet";
-import Button from "@/components/ui/Button";
-import {
-  useDeleteFavoriteListMutation,
-  useUpdateFavoriteListMutation,
-} from "@/query/favorite-lists";
-import Dialog from "@/components/ui/Dialog";
-import Input from "@/components/ui/Input";
-import { useRef } from "react";
+import ModifyList from "@/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled/ModifyList";
+import DeleteList from "@/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled/DeleteList";
+import { StaticImageData } from "next/image";
+import { useState } from "react";
 
 interface ListControlledProps {
   listId: number;
+  listName: string;
+  image: StaticImageData | string | null;
 }
 
-function ListControlled({ listId }: ListControlledProps) {
-  const { mutate: deleteFavoriteList } = useDeleteFavoriteListMutation();
-  const { mutate: updateFavoriteList } = useUpdateFavoriteListMutation(listId);
-  const inputRef = useRef<HTMLInputElement>(null);
+function ListControlled({ listId, image, listName }: ListControlledProps) {
+  const [isOpen, setIsOpen] = useState(false);
 
-  const handleDelete = () => deleteFavoriteList(listId);
-
-  const handleChangeName = () => {
-    const name = inputRef.current?.value;
-    if (name && name.length) {
-      updateFavoriteList({ name });
-      if (inputRef.current) {
-        inputRef.current.value = "";
-      }
-    }
+  const handleClose = () => {
+    setIsOpen(false);
   };
 
   return (
-    <Sheet>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <Sheet.Trigger className="p-2">
         <EllipsisVertical width={24} height={24} />
       </Sheet.Trigger>
       <Sheet.Content>
         <div className="flex flex-col">
-          <Dialog>
-            <Dialog.Trigger asChild>
-              <Button variant="link">Modify</Button>
-            </Dialog.Trigger>
-            <Dialog.Content>
-              <form onSubmit={handleChangeName} className="flex flex-col gap-4">
-                <h1 className="mx-auto">Change List</h1>
-                <Input ref={inputRef} type="text" placeholder="New List Name" />
-                <Button onClick={handleChangeName} variant="active">
-                  Change Name
-                </Button>
-              </form>
-            </Dialog.Content>
-          </Dialog>
-          <Button onClick={handleDelete} variant="link">
-            Delete
-          </Button>
+          <ModifyList listId={listId} image={image} listName={listName} onClose={handleClose} />
+          <DeleteList listId={listId} onClose={handleClose} />
         </div>
       </Sheet.Content>
     </Sheet>
@@ -636,46 +955,59 @@ import Picture from "@/components/ui/Picture";
 import Link from "next/link";
 import ListControlled from "@/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled";
 import React from "react";
+import { getTimeAgo } from "@/utils/getTimeAgo";
 
 interface DragAndDropHandler {
-  handleDragStart: (id: number) => void;
+  draggedItemId: number | null;
+  handleDragStart: (id: number, order: number) => void;
   handleDragEnter: (order: number) => void;
   handleDragEnd: (userId: number) => void;
-  handleDragOver: (e: { preventDefault: () => void }) => void;
+  handleDragOver: (e: React.DragEvent) => void;
 }
 
 interface FavoriteListProps {
   list: List;
   dragAndDropHandler: DragAndDropHandler;
+  index: number;
 }
 
-function FavoriteList({ list, dragAndDropHandler }: FavoriteListProps) {
-  const { handleDragEnter, handleDragOver, handleDragStart, handleDragEnd } = dragAndDropHandler;
+function FavoriteList({ list, dragAndDropHandler, index }: FavoriteListProps) {
+  const { draggedItemId, handleDragEnter, handleDragOver, handleDragStart, handleDragEnd } =
+    dragAndDropHandler;
+
+  const isDragging = draggedItemId === list.id;
+  const updatedTime = getTimeAgo(list.updated_at);
 
   return (
     <div
-      onDragStart={() => handleDragStart(list.id)}
+      draggable={true}
+      onDragStart={() => handleDragStart(list.id, list.order)}
       onDragEnter={() => handleDragEnter(list.order)}
       onDragEnd={() => handleDragEnd(list.user_id)}
       onDragOver={handleDragOver}
-      className="flex items-center justify-between"
+      className={`flex items-center justify-between transition-colors duration-200 ${isDragging ? "bg-button-ghost opacity-50" : ""} ${draggedItemId !== null && !isDragging ? "border-t-2 border-dashed border-solid-default" : ""} `}
+      data-id={list.id}
+      data-order={list.order}
+      data-index={index}
     >
-      <Link href={`/mylist/${list.id}`} className="flex w-full items-center justify-between py-2">
+      <Link
+        href={`/mylist/${list.id}`}
+        className="flex w-full items-center justify-between py-2"
+        onClick={(e) => isDragging && e.preventDefault()}
+      >
         <div className="flex items-center gap-4">
           <Picture
             src={list.image_url}
             alt={`${list.name}'s image`}
-            width={56}
-            height={56}
-            className="rounded-lg"
+            className="h-14 w-14 rounded-lg"
           />
-          <div className="a flex flex-col justify-center">
+          <div className="flex flex-col justify-center">
             <h1 className="text-left text-base text-text-h">{list.name}</h1>
-            <p className="text-sm text-text-p">{list.updated_at}</p>
+            <p className="text-sm text-text-p">{updatedTime}</p>
           </div>
         </div>
       </Link>
-      <ListControlled listId={list.id} />
+      <ListControlled listId={list.id} image={list.image_url} listName={list.name} />
     </div>
   );
 }
@@ -690,14 +1022,12 @@ export { default } from "./FavoriteList";
 --- src/app/(protected)/(lists)/mylist/page.tsx ---
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { favoriteListsOption } from "@/query/favorite-lists/options/favoriteListsOption";
 import FavoriteList from "@/app/(protected)/(lists)/mylist/_components/FavoriteList";
-import { useReorderFavoriteList } from "@/query/favorite-lists";
+import { useFavoriteListsQuery, useReorderFavoriteList } from "@/query/favorite-lists";
 import { useDragAndDrop } from "@/hooks/useDragAndDrop";
 
 function MyListPage() {
-  const { data: lists } = useQuery(favoriteListsOption);
+  const { data: lists } = useFavoriteListsQuery();
   const { mutate: reorderFavoriteList } = useReorderFavoriteList();
   const dragAndDropHandler = useDragAndDrop(reorderFavoriteList);
 
@@ -705,8 +1035,13 @@ function MyListPage() {
 
   return (
     <div>
-      {lists.map((list) => (
-        <FavoriteList key={list.id} list={list} dragAndDropHandler={dragAndDropHandler} />
+      {lists.map((list, index) => (
+        <FavoriteList
+          key={list.id}
+          list={list}
+          index={index}
+          dragAndDropHandler={dragAndDropHandler}
+        />
       ))}
     </div>
   );
@@ -745,6 +1080,382 @@ async function ListsLayout({
 }
 
 export default ListsLayout;
+
+
+--- src/app/(protected)/profile/_components/ProfileImage/_hooks/useProfileImage.ts ---
+import { useUpdateImageMutation } from "@/query/users";
+import React, { useRef, useState } from "react";
+
+export function useProfileImage() {
+  const { mutate: updateImage, isPending: updateIsPending } = useUpdateImageMutation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    if (file) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  const handleSave = () => {
+    if (selectedFile) {
+      updateImage({
+        file: selectedFile,
+      });
+    }
+    setSelectedFile(null);
+  };
+
+  const handleUndo = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  return {
+    selectedFile,
+    previewUrl,
+    fileInputRef,
+    updateIsPending,
+    handleImageClick,
+    handleFileChange,
+    handleSave,
+    handleUndo,
+  };
+}
+
+
+--- src/app/(protected)/profile/_components/ProfileImage/ProfileImage.tsx ---
+import React from "react";
+import Picture from "@/components/ui/Picture";
+import { Save, Undo2 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useProfileImage } from "@/app/(protected)/profile/_components/ProfileImage/_hooks/useProfileImage";
+
+function ProfileImage() {
+  const { data: userData } = useSession();
+  const {
+    selectedFile,
+    previewUrl,
+    fileInputRef,
+    updateIsPending,
+    handleFileChange,
+    handleSave,
+    handleUndo,
+    handleImageClick,
+  } = useProfileImage();
+
+  return (
+    <div className="relative w-fit">
+      <button onClick={handleImageClick} disabled={updateIsPending}>
+        <Picture
+          src={previewUrl || userData?.user.profile_image_url}
+          className="h-32 w-32 rounded-full"
+        />
+      </button>
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*"
+        className="hidden"
+      />
+      <button
+        onClick={handleSave}
+        disabled={updateIsPending || !selectedFile}
+        className="absolute bottom-0 right-5 w-fit rounded-full border border-icon-bg"
+      >
+        <Save className="stroke-icon-stroke" />
+      </button>
+      {selectedFile && (
+        <button
+          onClick={handleUndo}
+          className="absolute bottom-5 right-0 w-fit rounded-full border border-icon-bg"
+        >
+          <Undo2 className="stroke-icon-stroke" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default ProfileImage;
+
+
+--- src/app/(protected)/profile/_components/ProfileImage/index.ts ---
+export { default } from "./ProfileImage";
+
+
+--- src/app/(protected)/profile/change-name/page.tsx ---
+"use client";
+
+import Button from "@/components/ui/Button";
+import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { NameSchema, nameSchema } from "@/lib/zod/auth";
+import { zodResolver } from "@hookform/resolvers/zod";
+import TextField from "@/components/common/Field/TextField";
+import { useSession } from "next-auth/react";
+import { useUpdateNameMutation } from "@/query/users";
+
+function ChangeNamePage() {
+  const { data: userData } = useSession();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<NameSchema>({
+    resolver: zodResolver(nameSchema),
+  });
+
+  const { mutate: updateNameMutate, isPending } = useUpdateNameMutation();
+
+  const onSubmit = (data: NameSchema) => {
+    if (!data.name) return;
+
+    updateNameMutate({
+      data,
+      email: userData?.user.email,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <TextField
+        id="name"
+        name="name"
+        type="text"
+        placeholder="New Name"
+        register={register}
+        error={errors.name}
+        className="py-3"
+      />
+      <div className="flex flex-col gap-3 py-3">
+        <Button type="submit" variant="outline" disabled={isPending}>
+          Changes
+        </Button>
+        <Button variant="link" asChild>
+          <Link href="/profile">Cancel</Link>
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+export default ChangeNamePage;
+
+
+--- src/app/(protected)/profile/change-password/page.tsx ---
+"use client";
+
+import { useSession } from "next-auth/react";
+import { useForm } from "react-hook-form";
+import { passwordSchema, PasswordSchema } from "@/lib/zod/auth";
+import { zodResolver } from "@hookform/resolvers/zod";
+import Button from "@/components/ui/Button";
+import Link from "next/link";
+import PasswordField from "@/components/common/Field/PasswordField";
+import { useUpdatePasswordMutation } from "@/query/users";
+
+function ChangePassword() {
+  const { data: userData } = useSession();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<PasswordSchema>({
+    resolver: zodResolver(passwordSchema),
+  });
+
+  const { mutate: updatePasswordMutate, isPending } = useUpdatePasswordMutation();
+
+  const onSubmit = (data: PasswordSchema) => {
+    if (!data.password) return;
+
+    updatePasswordMutate({
+      data,
+      email: userData?.user.email,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <PasswordField
+        id="password"
+        name="password"
+        error={errors.password}
+        placeholder="Password"
+        register={register}
+        className="py-3"
+      />
+      <PasswordField
+        id="passwordConfirm"
+        name="passwordConfirm"
+        error={errors.passwordConfirm}
+        placeholder="Confirm Password"
+        register={register}
+        className="py-3"
+      />
+      <div className="flex flex-col gap-3 py-3">
+        <Button type="submit" variant="outline" disabled={isPending}>
+          Changes
+        </Button>
+        <Button variant="link" asChild>
+          <Link href="/profile">Cancel</Link>
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+export default ChangePassword;
+
+
+--- src/app/(protected)/profile/verification/[changeType]/page.tsx ---
+"use client";
+
+import Button from "@/components/ui/Button";
+import { use } from "react";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
+import PasswordField from "@/components/common/Field/PasswordField";
+import { useForm } from "react-hook-form";
+import { validateSchema, ValidateSchema } from "@/lib/zod/auth";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useVerifyPasswordMutation } from "@/query/users";
+
+function VerificationPage({ params }: { params: Promise<{ changeType: string }> }) {
+  const { changeType } = use(params);
+  const { data: userData } = useSession();
+  const { mutate: verifyPasswordMutate, isPending } = useVerifyPasswordMutation();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ValidateSchema>({
+    resolver: zodResolver(validateSchema),
+  });
+
+  const nextPath = changeType === "name" ? "change-name" : "change-password";
+
+  const onSubmit = (data: ValidateSchema) => {
+    if (!data.password) return;
+
+    verifyPasswordMutate({
+      email: userData?.user.email,
+      password: data.password,
+      redirectPath: `/profile/${nextPath}`,
+      changeType,
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <PasswordField
+        id="password"
+        name="password"
+        placeholder="Password Verification"
+        register={register}
+        error={errors.password}
+        className="py-3"
+      />
+      <div className="flex flex-col gap-3 py-3">
+        <Button type="submit" variant="outline" disabled={isPending}>
+          Next
+        </Button>
+        <Button variant="link" asChild>
+          <Link href="/profile">Cancel</Link>
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+export default VerificationPage;
+
+
+--- src/app/(protected)/profile/page.tsx ---
+"use client";
+
+import React from "react";
+import { useSession } from "next-auth/react";
+import Button from "@/components/ui/Button";
+import Link from "next/link";
+import { useLogoutMutation } from "@/query/auth/mutations/useLogoutMutation";
+import { useDeleteAccountMutation } from "@/query/users/mutations/useDeleteAccountMutation";
+import ProfileImage from "@/app/(protected)/profile/_components/ProfileImage";
+
+function ProfilePage() {
+  const { data: userData } = useSession();
+  const { mutate: logoutMutate, isPending: logoutIsPending } = useLogoutMutation();
+  const { mutate: deleteAccount, isPending: deleteAccountIsPending } = useDeleteAccountMutation();
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4 py-4">
+        <ProfileImage />
+        <div>
+          <h1 className="text-xl font-medium text-text-h">{userData?.user.name}</h1>
+          <p className="font-light text-text-p">{userData?.user.email}</p>
+        </div>
+      </div>
+      <div className="flex flex-col gap-3">
+        <Button variant="ghost" asChild>
+          <Link href="/profile/verification/name">Change Name</Link>
+        </Button>
+        <Button variant="ghost" asChild>
+          <Link href="/profile/verification/password">Change Password</Link>
+        </Button>
+        <Button onClick={() => logoutMutate()} disabled={logoutIsPending} variant="outline">
+          Log Out
+        </Button>
+        <Button onClick={() => deleteAccount()} disabled={deleteAccountIsPending} variant="error">
+          Delete Account
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export default ProfilePage;
+
+
+--- src/app/(public)/_components/PopularityList/PopularityList.tsx ---
+"use client";
+
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { searchQueryOption } from "@/query/search/options/searchQueryOption";
+import SongCard from "@/components/common/SongCard";
+
+function PopularityList() {
+  const { data: songs } = useSuspenseQuery(
+    searchQueryOption({ text: " ", searchType: "both", sort: "popular" })
+  );
+
+  return (
+    <li className="flex flex-col gap-6">
+      {songs.items.map((song) => (
+        <SongCard key={song.id} song={song} />
+      ))}
+    </li>
+  );
+}
+
+export default PopularityList;
+
+
+--- src/app/(public)/_components/PopularityList/index.ts ---
+export { default } from "./PopularityList";
 
 
 --- src/app/(public)/search/_components/SearchPanel/SearchFilter/SearchFilter.tsx ---
@@ -1055,104 +1766,30 @@ export default async function SearchPage({
 
 
 --- src/app/(public)/page.tsx ---
-"use client";
+import { getServerQueryClient } from "@/lib/tanStackQuery/getServerQueryClient";
+import { searchQueryOption } from "@/query/search/options/searchQueryOption";
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import React from "react";
+import PopularityList from "@/app/(public)/_components/PopularityList";
 
-import Button from "@/components/ui/Button";
-import Link from "next/link";
-import { useToast } from "@/components/ui/Toast/useToast";
-import FuckAccessToken from "@/app/_components/test/FuckAccessToken";
-import GetMe from "@/app/_components/test/GetMe";
-import LogoutMe from "@/app/_components/test/LogoutMe";
+async function HomePage() {
+  const queryClient = getServerQueryClient();
 
-function HomePage() {
-  const { toast } = useToast();
-
-  const handleButtonClick = () => {
-    toast({
-      title: "알림",
-      message: "작업이 완료되었습니다!",
-      type: "error",
-    });
-  };
+  await queryClient.prefetchQuery(
+    searchQueryOption({ text: " ", searchType: "both", sort: "popular" })
+  );
 
   return (
-    <div className="flex flex-col gap-2">
-      <Button>outline</Button>
-      <Button variant="link">link</Button>
-      <Button variant="ghost">ghost</Button>
-      <Button variant="active" onClick={handleButtonClick}>
-        active
-      </Button>
-      <Button variant="error" asChild>
-        <Link href="/search">go to page Search</Link>
-      </Button>
-      <Button variant="link" asChild>
-        <Link href="/login">go to page Login</Link>
-      </Button>
-      <FuckAccessToken />
-      <GetMe />
-      <LogoutMe />
+    <div>
+      <h1 className="py-2 text-center text-text-p">Top 10</h1>
+      <HydrationBoundary state={dehydrate(queryClient)}>
+        <PopularityList />
+      </HydrationBoundary>
     </div>
   );
 }
 
 export default HomePage;
-
-
---- src/app/_components/test/FuckAccessToken.tsx ---
-import Button from "@/components/ui/Button";
-import { getSession, signIn } from "next-auth/react";
-
-function FuckAccessToken() {
-  const a = async () => {
-    const session = await getSession();
-    console.log(session);
-    const result = await signIn("Refresh", {
-      refreshToken: session?.user.refreshToken,
-      accessToken: "f",
-      redirect: false,
-    });
-  };
-
-  return <Button onClick={a}>Fuck AccessToken!</Button>;
-}
-
-export default FuckAccessToken;
-
-
---- src/app/_components/test/GetMe.tsx ---
-import Button from "@/components/ui/Button";
-import { usersApi } from "@/api/users";
-
-function GetMe() {
-  const a = async () => {
-    const b = await usersApi.me();
-    console.log(b);
-  };
-
-  return <Button onClick={a}>Get me</Button>;
-}
-
-export default GetMe;
-
-
---- src/app/_components/test/LogoutMe.tsx ---
-import Button from "@/components/ui/Button";
-import { getSession, signOut } from "next-auth/react";
-
-function LogoutMe() {
-  const a = async () => {
-    let session = await getSession();
-    console.log(session);
-    await signOut({ redirect: false });
-    session = await getSession();
-    console.log(session);
-  };
-
-  return <Button onClick={a}>log out</Button>;
-}
-
-export default LogoutMe;
 
 
 --- src/app/_layout/BottomNav/BottomNavItem/BottomNavItem.tsx ---
@@ -1166,7 +1803,7 @@ interface BottomNavItemProps {
   path: string;
   label: string;
   Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  IconFill: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  IconFill?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
 
 function BottomNavItem({ item }: { item: BottomNavItemProps }) {
@@ -1176,7 +1813,7 @@ function BottomNavItem({ item }: { item: BottomNavItemProps }) {
   return (
     <Link href={item.path} className="flex w-16 flex-col items-center justify-center gap-1">
       {isActive ? (
-        <item.IconFill width={24} height={24} className="fill-icon-bg" />
+        item.IconFill && <item.IconFill width={24} height={24} className="fill-icon-bg" />
       ) : (
         <item.Icon width={24} height={24} className="fill-icon-stroke" />
       )}
@@ -1201,8 +1838,9 @@ import Search from "@/assets/icons/search/search.svg";
 import SearchFill from "@/assets/icons/search/search_fill.svg";
 import MyList from "@/assets/icons/myLists/myLists.svg";
 import MyListFill from "@/assets/icons/myLists/myLists_fill.svg";
+import Profile from "@/assets/icons/profile/profile.svg";
 import BottomNavItem from "@/app/_layout/BottomNav/BottomNavItem";
-import { useSelectedLayoutSegment } from "next/navigation";
+import { useSelectedLayoutSegments } from "next/navigation";
 
 const NAV_ITEMS = [
   {
@@ -1223,12 +1861,16 @@ const NAV_ITEMS = [
     Icon: MyList,
     IconFill: MyListFill,
   },
+  {
+    path: "/profile",
+    label: "Profile",
+    Icon: Profile,
+  },
 ] as const;
 
 function BottomNav() {
-  const segment = useSelectedLayoutSegment();
-  if (segment === "(auth)") return null;
-
+  const segment = useSelectedLayoutSegments();
+  if (segment[0] === "(auth)" || segment[1] === "profile") return null;
   return (
     <div>
       <div className="pt fixed bottom-0 flex w-full items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
@@ -1360,10 +2002,9 @@ const NAV_TITLE = {
   "/account": "Account",
   "/search": "Search",
   "/add-list": "Add List",
-  "/mylist": "My List",
+  "/mylist": "MyList",
+  "/profile": "Profile",
 } as const;
-
-type NavPath = keyof typeof NAV_TITLE;
 
 interface TopNavProps {
   currentTheme: "light" | "dark";
@@ -1373,8 +2014,10 @@ function TopNav({ currentTheme }: TopNavProps) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const purePath = "/" + pathname.split("/")[1];
-  const title = purePath in NAV_TITLE ? NAV_TITLE[purePath as NavPath] : "Unknown Page";
+  const title =
+    NAV_TITLE[pathname as keyof typeof NAV_TITLE] ||
+    NAV_TITLE[`/${pathname.split("/")[1]}` as keyof typeof NAV_TITLE] ||
+    "Unknown Page";
 
   return (
     <div className="pt sticky top-0 flex items-center justify-between bg-body-default px-4 pb-3 pt-5">
@@ -1520,6 +2163,108 @@ const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
 
 
+--- src/app/test/_components/test/FuckAccessToken.tsx ---
+import Button from "@/components/ui/Button";
+import { getSession, signIn } from "next-auth/react";
+
+function FuckAccessToken() {
+  const a = async () => {
+    const session = await getSession();
+    console.log(session);
+    const result = await signIn("Refresh", {
+      refreshToken: session?.user.refreshToken,
+      accessToken: "f",
+      redirect: false,
+    });
+  };
+
+  return <Button onClick={a}>Fuck AccessToken!</Button>;
+}
+
+export default FuckAccessToken;
+
+
+--- src/app/test/_components/test/GetMe.tsx ---
+import Button from "@/components/ui/Button";
+import { usersApi } from "@/api/users";
+
+function GetMe() {
+  const a = async () => {
+    const b = await usersApi.me();
+    console.log(b);
+  };
+
+  return <Button onClick={a}>Get me</Button>;
+}
+
+export default GetMe;
+
+
+--- src/app/test/_components/test/LogoutMe.tsx ---
+import Button from "@/components/ui/Button";
+import { getSession, signOut } from "next-auth/react";
+
+function LogoutMe() {
+  const a = async () => {
+    let session = await getSession();
+    console.log(session);
+    await signOut({ redirect: false });
+    session = await getSession();
+    console.log(session);
+  };
+
+  return <Button onClick={a}>log out</Button>;
+}
+
+export default LogoutMe;
+
+
+--- src/app/test/page.tsx ---
+"use client";
+
+import React from "react";
+import { useToast } from "@/components/ui/Toast/useToast";
+import Button from "@/components/ui/Button";
+import Link from "next/link";
+import FuckAccessToken from "@/app/test/_components/test/FuckAccessToken";
+import GetMe from "@/app/test/_components/test/GetMe";
+import LogoutMe from "@/app/test/_components/test/LogoutMe";
+
+function TestPage() {
+  const { toast } = useToast();
+
+  const handleButtonClick = () => {
+    toast({
+      title: "알림",
+      message: "작업이 완료되었습니다!",
+      type: "error",
+    });
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Button>outline</Button>
+      <Button variant="link">link</Button>
+      <Button variant="ghost">ghost</Button>
+      <Button variant="active" onClick={handleButtonClick}>
+        active
+      </Button>
+      <Button variant="error" asChild>
+        <Link href="/search">go to page Search</Link>
+      </Button>
+      <Button variant="link" asChild>
+        <Link href="/login">go to page Login</Link>
+      </Button>
+      <FuckAccessToken />
+      <GetMe />
+      <LogoutMe />
+    </div>
+  );
+}
+
+export default TestPage;
+
+
 --- src/app/layout.tsx ---
 import React from "react";
 import "./globals.css";
@@ -1585,7 +2330,7 @@ import { FieldError } from "react-hook-form";
 function ErrorMessage({ error }: { error: FieldError | undefined }) {
   if (!error) return null;
 
-  return <p className="text-button-error mt-1 text-sm">{error.message}</p>;
+  return <p className="mt-1 text-sm text-button-error">{error.message}</p>;
 }
 
 export default ErrorMessage;
@@ -1899,7 +2644,6 @@ export { default } from "./Button";
 --- src/components/ui/Dialog/Dialog.tsx ---
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { X } from "lucide-react";
-import { createPortal } from "react-dom";
 
 type DialogContextType = {
   isOpen: boolean;
@@ -2005,7 +2749,7 @@ function Content({ children, className }: ContentProps) {
     }
   };
 
-  return createPortal(
+  return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
       onClick={handleOutClose}
@@ -2016,8 +2760,7 @@ function Content({ children, className }: ContentProps) {
           <X className="stroke-icon-stroke" />
         </button>
       </div>
-    </div>,
-    document.body
+    </div>
   );
 }
 
@@ -2037,7 +2780,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
     <input
       type={type}
-      className={`${className || ""}bg-input-input flex h-14 w-full items-center justify-center rounded-xl p-4 text-base text-text-h placeholder:text-text-p focus:outline-none focus:ring-1 focus:ring-solid-default`}
+      className={`${className || ""} flex h-14 w-full items-center justify-center rounded-xl bg-input-input p-4 text-base text-text-h placeholder:text-text-p focus:outline-none focus:ring-1 focus:ring-solid-default`}
       {...props}
     />
   );
@@ -2053,32 +2796,41 @@ export { default } from "./Input";
 --- src/components/ui/Picture/Picture.tsx ---
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { StaticImageData } from "next/image";
 import errorImage from "@/assets/images/src_error.png";
 import notFoundImage from "@/assets/images/src_notfound.png";
 
 interface PictureProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "src"> {
   src?: StaticImageData | string | null;
-  fallbackSrc?: StaticImageData;
+  fallbackSrc?: StaticImageData | string;
   width?: number;
   height?: number;
 }
 
 function Picture({ src, alt, fallbackSrc = errorImage, width, height, ...props }: PictureProps) {
   const [currentSrc, setCurrentSrc] = useState<string>(() => {
-    if (!src) return notFoundImage.src;
+    if (!src) return typeof notFoundImage === "string" ? notFoundImage : notFoundImage.src;
     return typeof src === "string" ? src : src.src;
   });
 
+  useEffect(() => {
+    if (!src) {
+      setCurrentSrc(typeof notFoundImage === "string" ? notFoundImage : notFoundImage.src);
+    } else {
+      setCurrentSrc(typeof src === "string" ? src : src.src);
+    }
+  }, [src]);
+
   const handleError = () => {
-    setCurrentSrc(fallbackSrc.src);
+    const fallbackSrcValue = typeof fallbackSrc === "string" ? fallbackSrc : fallbackSrc.src;
+    setCurrentSrc(fallbackSrcValue);
   };
 
   return (
     <img
       src={currentSrc}
-      alt={alt}
+      alt={alt || "이미지"}
       onError={handleError}
       loading="lazy"
       width={width}
@@ -2414,45 +3166,53 @@ export function useToast() {
 
 
 --- src/hooks/useDragAndDrop.ts ---
-import { useMemo, useRef } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { UseMutateFunction } from "@tanstack/react-query";
 
 export function useDragAndDrop<T>(mutate: UseMutateFunction<any, Error, T, unknown>) {
-  const dragId = useRef<null | number>(null);
-  const dragOrder = useRef<null | number>(null);
+  const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
+  const dragStartIndex = useRef<number | null>(null);
+  const dragEndIndex = useRef<number | null>(null);
 
-  const handleDragStart = (id: number) => (dragId.current = id);
-
-  const handleDragEnter = (order: number) => (dragOrder.current = order);
-
-  const handleDragEnd = (userId?: number) => {
-    if (dragId.current && dragOrder.current) {
-      const mutateData: any = {
-        listId: dragId.current,
-        newOrder: dragOrder.current,
-      };
-
-      if (userId !== undefined) {
-        mutateData.userId = userId;
-      }
-
-      mutate(mutateData);
-    }
-
-    dragId.current = null;
-    dragOrder.current = null;
+  const handleDragStart = (id: number, currentOrder: number) => {
+    setDraggedItemId(id);
+    dragStartIndex.current = currentOrder;
   };
 
-  const handleDragOver = (e: { preventDefault: () => void }) => e.preventDefault();
+  const handleDragEnter = (order: number) => (dragEndIndex.current = order);
+
+  const handleDragEnd = (userId: number) => {
+    if (draggedItemId && dragStartIndex.current !== null && dragEndIndex.current !== null) {
+      if (dragStartIndex.current !== dragEndIndex.current) {
+        const mutateData: any = {
+          newOrder: dragEndIndex.current,
+        };
+
+        if (userId !== -1) {
+          mutateData.userId = userId;
+          mutateData.listId = draggedItemId;
+        } else mutateData.favoriteId = draggedItemId;
+
+        mutate(mutateData);
+      }
+    }
+
+    setDraggedItemId(null);
+    dragStartIndex.current = null;
+    dragEndIndex.current = null;
+  };
+
+  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
 
   return useMemo(
     () => ({
+      draggedItemId,
       handleDragStart,
       handleDragEnter,
       handleDragEnd,
       handleDragOver,
     }),
-    []
+    [draggedItemId, mutate]
   );
 }
 
@@ -2750,7 +3510,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, session, trigger }) {
       if (user) {
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
@@ -2759,6 +3519,13 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.profile_image_url = user.profile_image_url;
       }
+
+      if (trigger === "update" && session?.user) {
+        if (session.user.profile_image_url) {
+          token.profile_image_url = session.user.profile_image_url;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -2873,8 +3640,24 @@ export const accountSchema = z
     path: ["passwordConfirm"],
   });
 
+export const validateSchema = z.object({
+  password,
+});
+
+export const nameSchema = z.object({
+  name: name,
+});
+
+export const passwordSchema = z.object({
+  password,
+  passwordConfirm,
+});
+
 export type LoginSchema = z.infer<typeof loginSchema>;
 export type AccountSchema = z.infer<typeof accountSchema>;
+export type ValidateSchema = z.infer<typeof validateSchema>;
+export type NameSchema = z.infer<typeof nameSchema>;
+export type PasswordSchema = z.infer<typeof passwordSchema>;
 
 
 --- src/query/auth/mutations/useAccountMutation.ts ---
@@ -2933,7 +3716,7 @@ export function useLoginMutation() {
       }
     },
     onSuccess: () => {
-      router.back();
+      router.push("/");
       toast({
         title: "Login Success",
         message: "Login Successfully Great!",
@@ -2955,13 +3738,16 @@ export function useLoginMutation() {
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/Toast/useToast";
 import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export function useLogoutMutation() {
+  const router = useRouter();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: () => signOut({ redirect: true, callbackUrl: "/login" }),
+    mutationFn: () => signOut({ redirect: false }),
     onSuccess: () => {
+      router.push("/login");
       toast({
         title: "Logout Success",
         message: "Logout Successfully Great!",
@@ -3031,9 +3817,10 @@ export function useAddSongToListMutation(listId: number) {
 --- src/query/favorite-lists/mutations/useCreateFavoriteListMutation.ts ---
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { favoriteListsApi } from "@/api/favorite-lists";
-import { CreateFavoriteListRequest } from "@/types/favorite-list.type";
+import { CreateFavoriteListRequest, FavoriteList } from "@/types/favorite-list.type";
 import { useToast } from "@/components/ui/Toast/useToast";
 import { getFavoriteListsKey } from "@/query/favorite-lists";
+import { getRandomInteger } from "@/utils/getRandomInteger";
 
 export function useCreateFavoriteListMutation() {
   const queryClient = useQueryClient();
@@ -3041,21 +3828,44 @@ export function useCreateFavoriteListMutation() {
 
   return useMutation({
     mutationFn: (data: CreateFavoriteListRequest) => favoriteListsApi.createList(data),
+    onMutate: (data) => {
+      queryClient.cancelQueries({ queryKey: getFavoriteListsKey() });
+      const previousLists = queryClient.getQueryData<FavoriteList[]>(getFavoriteListsKey());
+
+      if (previousLists) {
+        const newList = {
+          id: -1,
+          user_id: -getRandomInteger(),
+          name: data.name,
+          order: previousLists[previousLists.length - 1].order + 1,
+          image_url: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          deleted_at: null,
+        };
+        queryClient.setQueryData(getFavoriteListsKey(), [...previousLists, newList]);
+
+        return { previousLists };
+      }
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: getFavoriteListsKey() });
       toast({
         title: "My List Created Successfully",
         message: "My List Created Successfully",
         type: "success",
       });
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousLists)
+        queryClient.setQueryData(getFavoriteListsKey(), context.previousLists);
+
       toast({
         title: "Error",
         message: error instanceof Error ? error.message : "Failed To Create My List",
         type: "error",
       });
     },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: getFavoriteListsKey() }),
   });
 }
 
@@ -3065,6 +3875,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { favoriteListsApi } from "@/api/favorite-lists";
 import { useToast } from "@/components/ui/Toast/useToast";
 import { getFavoriteListsKey } from "@/query/favorite-lists";
+import { FavoriteList } from "@/types/favorite-list.type";
 
 export function useDeleteFavoriteListMutation() {
   const queryClient = useQueryClient();
@@ -3072,21 +3883,37 @@ export function useDeleteFavoriteListMutation() {
 
   return useMutation({
     mutationFn: (listId: number) => favoriteListsApi.deleteList(listId),
+    onMutate: async (listId) => {
+      await queryClient.cancelQueries({ queryKey: getFavoriteListsKey() });
+      const previousLists = queryClient.getQueryData<FavoriteList[]>(getFavoriteListsKey());
+
+      if (previousLists) {
+        queryClient.setQueryData<FavoriteList[]>(
+          getFavoriteListsKey(),
+          previousLists.filter((list) => list.id !== listId)
+        );
+      }
+
+      return { previousLists };
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: getFavoriteListsKey() });
       toast({
         title: "My List Deleted Successfully",
         message: "My List Deleted Successfully",
         type: "success",
       });
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousLists)
+        queryClient.setQueryData(getFavoriteListsKey(), context.previousLists);
+
       toast({
         title: "Error",
         message: error instanceof Error ? error.message : "Failed To Delete List",
         type: "error",
       });
     },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: getFavoriteListsKey() }),
   });
 }
 
@@ -3096,6 +3923,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { favoriteListsApi } from "@/api/favorite-lists";
 import { useToast } from "@/components/ui/Toast/useToast";
 import { getFavoriteListSongsKey } from "@/query/favorite-lists";
+import { FavoriteListSong } from "@/types/favorite-list.type";
 
 export function useRemoveSongFromListMutation(listId: number) {
   const queryClient = useQueryClient();
@@ -3103,21 +3931,38 @@ export function useRemoveSongFromListMutation(listId: number) {
 
   return useMutation({
     mutationFn: (favoriteId: number) => favoriteListsApi.removeSongFromList(favoriteId),
+    onMutate: async (favoriteId) => {
+      await queryClient.cancelQueries({ queryKey: getFavoriteListSongsKey(listId) });
+      const previousSongs = queryClient.getQueryData<FavoriteListSong[]>(
+        getFavoriteListSongsKey(listId)
+      );
+
+      if (previousSongs) {
+        queryClient.setQueryData(
+          getFavoriteListSongsKey(listId),
+          previousSongs.filter((song) => song.id !== favoriteId)
+        );
+      }
+      return { previousSongs };
+    },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: getFavoriteListSongsKey(listId) });
       toast({
         title: "Song Removed From List Successfully",
         message: data.message,
         type: "success",
       });
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousSongs)
+        queryClient.setQueryData(getFavoriteListSongsKey(listId), context.previousSongs);
+
       toast({
         title: "Error",
         message: error instanceof Error ? error.message : "Failed To Remove Song From List",
         type: "error",
       });
     },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: getFavoriteListSongsKey(listId) }),
   });
 }
 
@@ -3189,35 +4034,94 @@ export function useReorderSongMutation(listId: number) {
 --- src/query/favorite-lists/mutations/useUpdateFavoriteListMutation.ts ---
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { favoriteListsApi } from "@/api/favorite-lists";
-import { UpdateFavoriteListRequest } from "@/types/favorite-list.type";
+import { FavoriteList, UpdateFavoriteListRequest } from "@/types/favorite-list.type";
 import { useToast } from "@/components/ui/Toast/useToast";
 import { getFavoriteListKey, getFavoriteListsKey } from "@/query/favorite-lists";
+import { upload } from "@/api/upload";
 
 export function useUpdateFavoriteListMutation(listId: number) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (data: UpdateFavoriteListRequest) => favoriteListsApi.updateList(listId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: getFavoriteListsKey() });
-      queryClient.invalidateQueries({ queryKey: getFavoriteListKey(listId) });
+    mutationFn: async (
+      data: UpdateFavoriteListRequest & {
+        isOptimistic?: boolean;
+        file?: File | null;
+      }
+    ) => {
+      if (!data.isOptimistic || !data.file) {
+        return favoriteListsApi.updateList(listId, {
+          name: data.name,
+          image_url: data.image_url,
+        });
+      }
 
+      const uploadResult = await upload(data.file);
+
+      return favoriteListsApi.updateList(listId, {
+        name: data.name,
+        image_url: uploadResult.url,
+      });
+    },
+    onMutate: async (data) => {
+      queryClient.cancelQueries({ queryKey: getFavoriteListsKey() });
+      const previousLists = queryClient.getQueryData<FavoriteList[]>(getFavoriteListsKey());
+
+      if (previousLists) {
+        const optimisticIndex = previousLists.findIndex((list) => list.id === listId);
+
+        if (optimisticIndex !== -1) {
+          const updatedLists = [...previousLists];
+
+          updatedLists[optimisticIndex] = {
+            ...updatedLists[optimisticIndex],
+            name: data.name ?? updatedLists[optimisticIndex].name,
+            image_url: data.image_url ?? updatedLists[optimisticIndex].image_url,
+          };
+
+          queryClient.setQueryData(getFavoriteListsKey(), updatedLists);
+        }
+      }
+
+      return { previousLists };
+    },
+    onSuccess: () => {
       toast({
         title: "My List Updated Successfully",
         message: "My List Updated Successfully",
         type: "success",
       });
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      if (context?.previousLists) {
+        queryClient.setQueryData(getFavoriteListsKey(), context.previousLists);
+      }
+
       toast({
         title: "Error",
         message: error instanceof Error ? error.message : "Failed To Update My List",
         type: "error",
       });
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: getFavoriteListsKey() });
+      queryClient.invalidateQueries({ queryKey: getFavoriteListKey(listId) });
+    },
   });
 }
+
+
+--- src/query/favorite-lists/options/favoritListSongsOption.ts ---
+import { queryOptions } from "@tanstack/react-query";
+import { getFavoriteListSongsKey } from "@/query/favorite-lists";
+import { favoriteListsApi } from "@/api/favorite-lists";
+
+export const favoriteListSongsOption = (listId: number) =>
+  queryOptions({
+    queryKey: getFavoriteListSongsKey(listId),
+    queryFn: () => favoriteListsApi.getListSongs(listId),
+  });
 
 
 --- src/query/favorite-lists/options/favoriteListsOption.ts ---
@@ -3232,26 +4136,25 @@ export const favoriteListsOption = queryOptions({
 
 
 --- src/query/favorite-lists/queries/useFavoriteListSongsQuery.ts ---
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { favoriteListsApi } from "@/api/favorite-lists";
 import { getFavoriteListSongsKey } from "@/query/favorite-lists";
 
 export function useFavoriteListSongsQuery(listId: number) {
-  return useQuery({
+  return useSuspenseQuery({
     queryKey: getFavoriteListSongsKey(listId),
     queryFn: () => favoriteListsApi.getListSongs(listId),
-    enabled: !!listId,
   });
 }
 
 
 --- src/query/favorite-lists/queries/useFavoriteListsQuery.ts ---
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { favoriteListsApi } from "@/api/favorite-lists";
 import { getFavoriteListsKey } from "@/query/favorite-lists";
 
 export function useFavoriteListsQuery() {
-  return useQuery({
+  return useSuspenseQuery({
     queryKey: getFavoriteListsKey(),
     queryFn: () => favoriteListsApi.getLists(),
   });
@@ -3351,6 +4254,268 @@ export const getSearchQueryKey = (params: {
 }) => ["search", params.text, params.searchType, params.sort];
 
 
+--- src/query/users/mutations/useDeleteAccountMutation.ts ---
+import { useMutation } from "@tanstack/react-query";
+import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/Toast/useToast";
+import { usersApi } from "@/api/users";
+
+export function useDeleteAccountMutation() {
+  const { toast } = useToast();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: async () => {
+      await usersApi.deleteAccount();
+      return true;
+    },
+    onSuccess: async () => {
+      await signOut({ redirect: false });
+      router.push("/login");
+      toast({
+        title: "Account Deleted",
+        message: "Your account has been deleted successfully.",
+        type: "success",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Delete Failed",
+        message: error instanceof Error ? error.message : "Failed to delete account.",
+        type: "error",
+      });
+    },
+  });
+}
+
+
+--- src/query/users/mutations/useUpdateImageMutation.ts ---
+import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/Toast/useToast";
+import { usersApi } from "@/api/users";
+import { upload } from "@/api/upload";
+import { useSession } from "next-auth/react";
+
+interface UpdateProfileRequest {
+  file?: File | null;
+}
+
+export function useUpdateImageMutation() {
+  const { toast } = useToast();
+  const { update } = useSession();
+
+  return useMutation({
+    mutationFn: async (data: UpdateProfileRequest) => {
+      if (!data.file) return null;
+
+      const uploadResult = await upload(data.file);
+
+      return usersApi.modify({ profile_image_url: uploadResult.url });
+    },
+    onSuccess: async (data) => {
+      await update({ user: { profile_image_url: data?.profile_image_url } });
+      toast({
+        title: "Successfully Updated",
+        message: "Your profile has been updated",
+        type: "success",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Update Failed",
+        message: error instanceof Error ? error.message : "Failed to update profile",
+        type: "error",
+      });
+    },
+  });
+}
+
+
+--- src/query/users/mutations/useUpdateNameMutation.ts ---
+import { useMutation } from "@tanstack/react-query";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/Toast/useToast";
+import { usersApi } from "@/api/users";
+import { NameSchema } from "@/lib/zod/auth";
+import { decrypt } from "@/utils/decrypt";
+
+interface UpdateNameParams {
+  data: NameSchema;
+  email: string | undefined;
+}
+
+export function useUpdateNameMutation() {
+  const { toast } = useToast();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: async ({ data, email }: UpdateNameParams) => {
+      const passwordSessionStr = sessionStorage.getItem("password");
+      if (!passwordSessionStr) throw new Error("Session Ded");
+
+      const passwordSession = JSON.parse(passwordSessionStr);
+      if (passwordSession.expires < Date.now()) {
+        sessionStorage.removeItem("password");
+        throw new Error("Session expired");
+      }
+
+      const password = decrypt(passwordSession.value || "");
+
+      await usersApi.modify({ name: data.name });
+
+      const signInResult = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (!signInResult?.ok) {
+        throw new Error(signInResult?.error || "재인증에 실패했습니다.");
+      }
+
+      sessionStorage.removeItem("password");
+
+      return true;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Successfully Updated",
+        message: "Change Name",
+        type: "success",
+      });
+      router.push("/profile");
+    },
+    onError: (error) => {
+      if (error instanceof Error) {
+        router.push("/profile/verify/name");
+      }
+      toast({
+        title: "Name Update Failed",
+        message: error instanceof Error ? error.message : "Failed to update name.",
+        type: "error",
+      });
+    },
+  });
+}
+
+
+--- src/query/users/mutations/useUpdatePasswordMutation.ts ---
+import { useMutation } from "@tanstack/react-query";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/Toast/useToast";
+import { usersApi } from "@/api/users";
+import { PasswordSchema } from "@/lib/zod/auth";
+
+interface UpdatePasswordParams {
+  data: PasswordSchema;
+  email: string | undefined;
+}
+
+export function useUpdatePasswordMutation() {
+  const { toast } = useToast();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: async ({ data, email }: UpdatePasswordParams) => {
+      await usersApi.modify({ password: data.password });
+
+      const result = await signIn("credentials", {
+        email,
+        password: data.password,
+        redirect: false,
+      });
+
+      if (!result?.ok) {
+        throw new Error(result?.error || "재인증에 실패했습니다.");
+      }
+
+      return true;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Successfully Updated",
+        message: "Change Password",
+        type: "success",
+      });
+      router.push("/profile");
+    },
+    onError: (error) => {
+      toast({
+        title: "Password Update Failed",
+        message: error instanceof Error ? error.message : "Failed to update password.",
+        type: "error",
+      });
+    },
+  });
+}
+
+
+--- src/query/users/mutations/useVerifyPasswordMutation.ts ---
+import { useMutation } from "@tanstack/react-query";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/Toast/useToast";
+import { encrypt } from "@/utils/encrypt";
+
+interface VerifyPasswordParams {
+  email: string | undefined;
+  password: string;
+  redirectPath: string;
+  changeType: string;
+}
+
+export function useVerifyPasswordMutation() {
+  const { toast } = useToast();
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: async ({ email, password, redirectPath, changeType }: VerifyPasswordParams) => {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (!result?.ok) {
+        throw new Error(result?.error || "Failed to VerifyPassword");
+      }
+
+      if (changeType === "name") {
+        const encryptedData = {
+          value: encrypt(password),
+          expires: Date.now() + 600000,
+        };
+
+        sessionStorage.setItem("password", JSON.stringify(encryptedData));
+      }
+
+      return true;
+    },
+    onSuccess: (_, variables) => {
+      router.push(variables.redirectPath);
+    },
+    onError: (error) => {
+      toast({
+        title: "이거 뜨면 zod 태업하는거임",
+        message: error instanceof Error ? error.message : "Failed to VerifyPassword",
+        type: "error",
+      });
+    },
+  });
+}
+
+
+--- src/query/users/index.ts ---
+export * from "./mutations/useVerifyPasswordMutation";
+export * from "./mutations/useUpdatePasswordMutation";
+export * from "./mutations/useUpdateNameMutation";
+export * from "./mutations/useUpdatePasswordMutation";
+export * from "./mutations/useUpdateImageMutation";
+
+
 --- src/types/auth.type.ts ---
 interface User {
   id: number;
@@ -3393,7 +4558,7 @@ export interface FavoriteList {
   user_id: number;
   name: string;
   order: number;
-  image_url: StaticImageData | null;
+  image_url: StaticImageData | string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -3423,7 +4588,7 @@ export interface CreateFavoriteListRequest {
 
 export interface UpdateFavoriteListRequest {
   name?: string;
-  image_url?: string;
+  image_url?: string | StaticImageData | null;
 }
 
 export interface AddSongToListRequest {
@@ -3443,9 +4608,7 @@ export interface ReorderSongRequest {
 
 export type GetFavoriteListsResponse = FavoriteList[];
 
-export interface GetFavoriteListSongsResponse {
-  items: FavoriteListSong[];
-}
+export type GetFavoriteListSongsResponse = FavoriteListSong[];
 
 export type CreateFavoriteListResponse = FavoriteList;
 
@@ -3518,7 +4681,9 @@ export interface SearchResponse {
 
 
 --- src/types/users.type.ts ---
-interface MeResponse {
+import { StaticImageData } from "next/image";
+
+export interface MeResponse {
   id: number;
   name: string;
   email: string;
@@ -3527,7 +4692,34 @@ interface MeResponse {
   updated_at: string;
 }
 
-type AllResponse = MeResponse[];
+export type AllResponse = MeResponse[];
+
+export interface MeModifyRequest {
+  name?: string;
+  password?: string;
+  profile_image_url?: StaticImageData | string | null;
+}
+
+export interface MeModifyResponse {
+  id: number;
+  name: string;
+  email: string;
+  profile_image_url: StaticImageData | string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+
+--- src/utils/decrypt.ts ---
+export const decrypt = (text: string) => {
+  return atob(text);
+};
+
+
+--- src/utils/encrypt.ts ---
+export const encrypt = (text: string) => {
+  return btoa(text);
+};
 
 
 --- src/utils/getIsomorphicSession.ts ---
@@ -3537,6 +4729,51 @@ import { authOptions } from "@/lib/next-auth/nextAuth";
 
 export const getIsomorphicSession = async (): Promise<Session | null> => {
   return typeof window === "undefined" ? await getServerSession(authOptions) : await getSession();
+};
+
+
+--- src/utils/getRandomInteger.ts ---
+export const getRandomInteger = (max = 99999999999, min = 0) =>
+  Math.floor(Math.random() * (max - min) + min);
+
+
+--- src/utils/getTimeAgo.ts ---
+export const getTimeAgo = (dateString: string): string => {
+  const date = new Date(dateString.replace("Z", ""));
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) {
+    return "just now";
+  }
+
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes} ${diffInMinutes === 1 ? "minute" : "minutes"} ago`;
+  }
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) {
+    return `${diffInHours} ${diffInHours === 1 ? "hour" : "hours"} ago`;
+  }
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) {
+    return `${diffInDays} ${diffInDays === 1 ? "day" : "days"} ago`;
+  }
+
+  const diffInWeeks = Math.floor(diffInDays / 7);
+  if (diffInWeeks < 4) {
+    return `${diffInWeeks} ${diffInWeeks === 1 ? "week" : "weeks"} ago`;
+  }
+
+  const diffInMonths = Math.floor(diffInDays / 30);
+  if (diffInMonths < 12) {
+    return `${diffInMonths} ${diffInMonths === 1 ? "month" : "months"} ago`;
+  }
+
+  const diffInYears = Math.floor(diffInDays / 365);
+  return `${diffInYears} ${diffInYears === 1 ? "year" : "years"} ago`;
 };
 
 
