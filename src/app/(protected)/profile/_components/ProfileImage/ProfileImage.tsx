@@ -22,7 +22,7 @@ function ProfileImage() {
       <button onClick={handleImageClick} disabled={updateIsPending}>
         <Picture
           src={previewUrl || userData?.user.profile_image_url}
-          className="h-32 w-32 rounded-full"
+          className="h-32 w-32 rounded-full bg-icon-stroke"
         />
       </button>
       <input
