@@ -34,7 +34,6 @@ export function useAddSongToListMutation(listId: number) {
           type: "error",
         });
       } else {
-        // 일반 에러인 경우
         toast({
           title: "Error",
           message: error instanceof Error ? error.message : "Failed To Add Song To List",
