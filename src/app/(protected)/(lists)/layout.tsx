@@ -13,7 +13,7 @@ async function ListsLayout({
 }>) {
   const queryClient = getServerQueryClient();
 
-  await queryClient.prefetchQuery(favoriteListsOption);
+  queryClient.prefetchQuery(favoriteListsOption);
 
   return (
     <div className="relative">

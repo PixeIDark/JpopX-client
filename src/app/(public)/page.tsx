@@ -1,15 +1,13 @@
 import { getServerQueryClient } from "@/lib/tanStackQuery/getServerQueryClient";
-import { searchQueryOption } from "@/query/search/options/searchQueryOption";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import React from "react";
 import PopularityList from "@/app/(public)/_components/PopularityList";
+import { searchQueryOption } from "@/query/search/options/searchQueryOption";
 
 async function HomePage() {
   const queryClient = getServerQueryClient();
 
-  await queryClient.prefetchQuery(
-    searchQueryOption({ text: "", searchType: "both", sort: "popular" })
-  );
+  queryClient.prefetchQuery(searchQueryOption({ text: "", searchType: "both", sort: "popular" }));
 
   return (
     <div>

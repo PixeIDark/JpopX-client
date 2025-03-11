@@ -10,7 +10,7 @@ function PopularityList() {
   );
 
   return (
-    <li className="flex flex-col gap-6">
+    <li className="mb-4 flex flex-col gap-6">
       {songs.items.map((song) => (
         <SongCard key={song.id} song={song} />
       ))}
