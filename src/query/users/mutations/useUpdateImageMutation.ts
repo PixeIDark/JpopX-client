@@ -17,10 +17,11 @@ export function useUpdateImageMutation() {
       if (!data.file) return null;
 
       const uploadResult = await upload(data.file);
-      update({ user: { profile_image_url: uploadResult.url } });
+
       return usersApi.modify({ profile_image_url: uploadResult.url });
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      await update({ user: { profile_image_url: data?.profile_image_url } });
       toast({
         title: "Successfully Updated",
         message: "Your profile has been updated",

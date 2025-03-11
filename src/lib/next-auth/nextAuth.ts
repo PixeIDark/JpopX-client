@@ -78,7 +78,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, session, trigger }) {
       if (user) {
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
@@ -87,6 +87,13 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.profile_image_url = user.profile_image_url;
       }
+
+      if (trigger === "update" && session?.user) {
+        if (session.user.profile_image_url) {
+          token.profile_image_url = session.user.profile_image_url;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
