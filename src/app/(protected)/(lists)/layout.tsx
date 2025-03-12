@@ -20,7 +20,7 @@ async function ListsLayout({
       <HydrationBoundary state={dehydrate(queryClient)}>
         <div>{children}</div>
       </HydrationBoundary>
-      <div className="h-[72] w-full" />
+      <div className="h-[72]" />
       <CreateListButton />
     </div>
   );
