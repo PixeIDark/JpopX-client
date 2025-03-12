@@ -21,7 +21,7 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "JpopX",
-  icons: { icon: "/favicon.ico" },
+  icons: { icon: "./favicon.ico" },
   description: "search j-pop number",
 };
 

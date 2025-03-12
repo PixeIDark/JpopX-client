@@ -34,7 +34,8 @@ function ModifyList({ listId, image, listName, onClose }: ModifyListProps) {
               <Picture
                 src={previewUrl || image}
                 alt="리스트 이미지"
-                className="h-[200] w-[200] rounded-lg"
+                style={{ height: "200px", width: "200px" }}
+                className="rounded-lg"
               />
             </div>
             <p className="text-text-p">이미지 변경</p>
