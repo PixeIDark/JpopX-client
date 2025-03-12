@@ -39,7 +39,7 @@ async function RootLayout({
           <QueryProvider>
             <ToastProvider maxToasts={5}>
               <ScrollPositionProvider>
-                <div className="flex h-screen flex-col">
+                <div className="mx-auto flex h-screen max-w-lg flex-col">
                   <TopNav currentTheme={theme} />
                   <Main>{children}</Main>
                   <BottomNav />
