@@ -11,7 +11,7 @@ function CreateListButton() {
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <Dialog.Trigger asChild>
-        <div className="fixed inset-x-0 bottom-[77] mx-auto max-w-64 bg-body-default py-3">
+        <div className="sticky inset-x-0 bottom-0 mx-auto max-w-[calc(32rem-32px)] bg-body-default py-3">
           <Button variant="active">Create New List</Button>
         </div>
       </Dialog.Trigger>
