@@ -4,6 +4,7 @@ import LoginForm from "@/app/(auth)/login/_components/LoginForm";
 import { useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/Toast/useToast";
 import { useEffect } from "react";
+import SocialLogin from "@/app/(auth)/_components/SocialLogin";
 
 function LoginPage() {
   const params = useSearchParams();
@@ -23,6 +24,7 @@ function LoginPage() {
   return (
     <div>
       <LoginForm />
+      <SocialLogin />
     </div>
   );
 }
