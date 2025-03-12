@@ -11,7 +11,7 @@ export async function middleware(request: NextRequest) {
   });
 
   const protectedPaths = ["/mylist", "/profile", "/add-list"];
-  const isProtectedRoute = protectedPaths.some((path) => pathname.startsWith(path));
+  const isProtectedRoute = protectedPaths.includes(pathname);
 
   const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/account");
 
