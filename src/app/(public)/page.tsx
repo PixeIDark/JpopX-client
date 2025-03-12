@@ -1,8 +1,9 @@
 import { getServerQueryClient } from "@/lib/tanStackQuery/getServerQueryClient";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import React from "react";
 import PopularityList from "@/app/(public)/_components/PopularityList";
 import { searchQueryOption } from "@/query/search/options/searchQueryOption";
+
+export const dynamic = "force-dynamic";
 
 async function HomePage() {
   const queryClient = getServerQueryClient();
