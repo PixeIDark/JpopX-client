@@ -15,11 +15,7 @@ const NAV_TITLE = {
   "/profile": "Profile",
 } as const;
 
-interface TopNavProps {
-  currentTheme: "light" | "dark";
-}
-
-function TopNav({ currentTheme }: TopNavProps) {
+function TopNav() {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -36,7 +32,7 @@ function TopNav({ currentTheme }: TopNavProps) {
       <Link href="/">
         <h1 className="text-lg font-semibold text-text-h">{title}</h1>
       </Link>
-      <ThemeToggle currentTheme={currentTheme} />
+      <ThemeToggle />
     </div>
   );
 }

@@ -40,5 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# txt
-.txt
+# 추가 무시 폴더
+/src/app/test/
+/scripts/

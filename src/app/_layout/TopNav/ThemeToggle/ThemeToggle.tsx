@@ -1,36 +1,18 @@
 "use client";
 
-import { useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { MdLightMode, MdOutlineNightlightRound } from "react-icons/md";
-import { setTheme } from "@/utils/theme";
+import { useTheme } from "@/app/_providers/ThemeProvider";
 
-interface ThemeToggleProps {
-  currentTheme: "light" | "dark";
-}
-
-function ThemeToggle({ currentTheme }: ThemeToggleProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
-  const toggleTheme = async () => {
-    const newTheme = currentTheme === "light" ? "dark" : "light";
-
-    await setTheme(newTheme);
-
-    startTransition(() => {
-      router.refresh();
-    });
-  };
+function ThemeToggle() {
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <button
       onClick={toggleTheme}
-      disabled={isPending}
       className="relative h-10 max-h-10 w-10 rounded-md p-2 hover:bg-button-ghost"
-      aria-label={`Switch to ${currentTheme === "light" ? "dark" : "light"} mode`}
+      aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
     >
-      {currentTheme === "light" ? (
+      {theme === "light" ? (
         <MdOutlineNightlightRound size={24} className="text-text-h" />
       ) : (
         <MdLightMode size={24} className="text-text-h" />

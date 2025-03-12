@@ -1,4 +1,5 @@
 import React from "react";
+import { Loader } from "lucide-react";
 
 const styles = {
   outline: "bg-button-outline border border-stroke-default",
@@ -13,6 +14,7 @@ type ButtonVariant = keyof typeof styles;
 interface ButtonProps extends React.ComponentProps<"button"> {
   variant?: ButtonVariant;
   asChild?: boolean;
+  isPending?: boolean;
 }
 
 function Button({
@@ -21,6 +23,7 @@ function Button({
   variant = "outline",
   className,
   asChild = false,
+  isPending = false,
   ...props
 }: ButtonProps) {
   const buttonStyles = `${className || ""} ${styles[variant]} button-hover flex justify-center items-center bg-button-active text-text-h h-12 w-full rounded-xl text-base font-semibold transition-all duration-200`;
@@ -47,7 +50,7 @@ function Button({
 
   return (
     <button onClick={onClick} className={buttonStyles} {...props}>
-      {children}
+      {isPending ? <Loader size={24} className="animate-rotate" /> : children}
     </button>
   );
 }
