@@ -13,11 +13,11 @@ function LoginForm() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
   });
-  const { mutate: loginMutate } = useLoginMutation();
+  const { mutate: loginMutate, isPending } = useLoginMutation();
 
   const onSubmit = (data: LoginSchema) =>
     loginMutate({
@@ -43,8 +43,8 @@ function LoginForm() {
         register={register}
       />
       <p className="-mt-2 text-text-p">Forgot password?</p>
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Loading" : "Log in"}
+      <Button type="submit" disabled={isPending} isPending={isPending}>
+        Log in
       </Button>
       <Button type="submit" variant="link" asChild>
         <Link href="/account">New User Sign Up</Link>

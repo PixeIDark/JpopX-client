@@ -29,10 +29,20 @@ function ProfilePage() {
         <Button variant="ghost" asChild>
           <Link href="/profile/verification/password">Change Password</Link>
         </Button>
-        <Button onClick={() => logoutMutate()} disabled={logoutIsPending} variant="outline">
+        <Button
+          onClick={() => logoutMutate()}
+          disabled={logoutIsPending}
+          isPending={logoutIsPending}
+          variant="outline"
+        >
           Log Out
         </Button>
-        <Button onClick={() => deleteAccount()} disabled={deleteAccountIsPending} variant="error">
+        <Button
+          onClick={() => deleteAccount()}
+          disabled={deleteAccountIsPending}
+          isPending={deleteAccountIsPending}
+          variant="error"
+        >
           Delete Account
         </Button>
       </div>

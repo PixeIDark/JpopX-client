@@ -12,11 +12,11 @@ function AccountForm() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<AccountSchema>({
     resolver: zodResolver(accountSchema),
   });
-  const { mutate: accountMutate } = useAccountMutation();
+  const { mutate: accountMutate, isPending } = useAccountMutation();
 
   const onSubmit = (data: AccountSchema) => accountMutate(data);
 
@@ -52,8 +52,8 @@ function AccountForm() {
         placeholder="Confirm Password"
         register={register}
       />
-      <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Loading" : "Account"}
+      <Button type="submit" disabled={isPending} isPending={isPending}>
+        Account
       </Button>
     </form>
   );
