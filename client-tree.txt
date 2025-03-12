@@ -45,7 +45,7 @@ src
 │   │   │       │   ├── _components
 │   │   │       │   │   └── FavoriteSongList
 │   │   │       │   │       ├── FavoirteSongCard
-│   │   │       │   │       │   ├── FavoirteSongCard.tsx
+│   │   │       │   │       │   ├── FavoriteSongCard.tsx
 │   │   │       │   │       │   ├── RemoveSongButton
 │   │   │       │   │       │   │   ├── RemoveSongButton.tsx
 │   │   │       │   │       │   │   └── index.ts
@@ -122,6 +122,8 @@ src
 │   │   │   ├── BottomNavItem
 │   │   │   │   ├── BottomNavItem.tsx
 │   │   │   │   └── index.ts
+│   │   │   ├── _constants
+│   │   │   │   └── nav-item.ts
 │   │   │   └── index.ts
 │   │   ├── Main
 │   │   │   ├── Main.tsx
@@ -140,7 +142,7 @@ src
 │   │   ├── auth
 │   │   │   └── [...nextauth]
 │   │   │       └── route.ts
-│   │   └── test-cookie
+│   │   └── theme
 │   ├── favicon.ico
 │   ├── globals.css
 │   ├── layout.tsx
@@ -156,6 +158,8 @@ src
 │   │   ├── home
 │   │   │   ├── home.svg
 │   │   │   └── home_fill.svg
+│   │   ├── login
+│   │   │   └── login.svg
 │   │   ├── myLists
 │   │   │   ├── myLists.svg
 │   │   │   └── myLists_fill.svg
@@ -232,6 +236,7 @@ src
 │   │   └── queryConfig.ts
 │   └── zod
 │       └── auth.ts
+├── middleware.ts
 ├── query
 │   ├── auth
 │   │   └── mutations
@@ -283,4 +288,4 @@ src
     ├── getTimeAgo.ts
     └── theme.ts
 
-113 directories, 171 files
+115 directories, 174 files

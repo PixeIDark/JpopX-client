@@ -1,1 +1,1 @@
-export { default } from "./FavoirteSongCard";
+export { default } from "./FavoriteSongCard";

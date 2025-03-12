@@ -430,7 +430,7 @@ function CreateListButton() {
   const { dialogOpen, setDialogOpen, inputRef, handleSubmit } = useCreateListSubmit();
 
   return (
-    <div className="fixed bottom-[77px] left-0 right-0 px-4 pb-3">
+    <div className="fixed bottom-[77px] left-0 right-0 bg-body-default px-4 py-3">
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <Dialog.Trigger asChild>
           <Button variant="active">Create New List</Button>
@@ -439,9 +439,9 @@ function CreateListButton() {
           <form onClick={handleSubmit} className="flex flex-col gap-4">
             <h1 className="text-center">List Name</h1>
             <Input ref={inputRef} type="text" placeholder="Please Write" />
-            <Button variant="active" className="mx-auto h-[40] w-20">
-              Create
-            </Button>
+            <div className="mx-auto w-32">
+              <Button variant="active">Create</Button>
+            </div>
           </form>
         </Dialog.Content>
       </Dialog>
@@ -617,7 +617,7 @@ export default RemoveSongButton;
 export { default } from "./RemoveSongButton";
 
 
---- src/app/(protected)/(lists)/mylist/[listId]/_components/FavoriteSongList/FavoirteSongCard/FavoirteSongCard.tsx ---
+--- src/app/(protected)/(lists)/mylist/[listId]/_components/FavoriteSongList/FavoirteSongCard/FavoriteSongCard.tsx ---
 import Picture from "@/components/ui/Picture";
 import { FavoriteListSong } from "@/types/favorite-list.type";
 import RemoveSongButton from "@/app/(protected)/(lists)/mylist/[listId]/_components/FavoriteSongList/FavoirteSongCard/RemoveSongButton";
@@ -1066,14 +1066,14 @@ async function ListsLayout({
 }>) {
   const queryClient = getServerQueryClient();
 
-  await queryClient.prefetchQuery(favoriteListsOption);
+  queryClient.prefetchQuery(favoriteListsOption);
 
   return (
     <div className="relative">
       <HydrationBoundary state={dehydrate(queryClient)}>
         <div>{children}</div>
       </HydrationBoundary>
-      <div className="h-[60] w-full" />
+      <div className="h-[72] w-full" />
       <CreateListButton />
     </div>
   );
@@ -1160,7 +1160,7 @@ function ProfileImage() {
       <button onClick={handleImageClick} disabled={updateIsPending}>
         <Picture
           src={previewUrl || userData?.user.profile_image_url}
-          className="h-32 w-32 rounded-full"
+          className="h-32 w-32 rounded-full bg-icon-stroke"
         />
       </button>
       <input
@@ -1433,17 +1433,19 @@ export default ProfilePage;
 --- src/app/(public)/_components/PopularityList/PopularityList.tsx ---
 "use client";
 
-import { useSuspenseQuery } from "@tanstack/react-query";
 import { searchQueryOption } from "@/query/search/options/searchQueryOption";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import SongCard from "@/components/common/SongCard";
 
 function PopularityList() {
   const { data: songs } = useSuspenseQuery(
-    searchQueryOption({ text: " ", searchType: "both", sort: "popular" })
+    searchQueryOption({ text: "", searchType: "both", sort: "popular" })
   );
 
+  if (!songs) return null;
+
   return (
-    <li className="flex flex-col gap-6">
+    <li className="mb-4 flex flex-col gap-6">
       {songs.items.map((song) => (
         <SongCard key={song.id} song={song} />
       ))}
@@ -1751,7 +1753,7 @@ export default async function SearchPage({
   const queryClient = getServerQueryClient();
 
   if (params.text) {
-    await queryClient.prefetchQuery(searchQueryOption(params));
+    queryClient.prefetchQuery(searchQueryOption(params));
   }
 
   return (
@@ -1767,17 +1769,15 @@ export default async function SearchPage({
 
 --- src/app/(public)/page.tsx ---
 import { getServerQueryClient } from "@/lib/tanStackQuery/getServerQueryClient";
-import { searchQueryOption } from "@/query/search/options/searchQueryOption";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import React from "react";
 import PopularityList from "@/app/(public)/_components/PopularityList";
+import { searchQueryOption } from "@/query/search/options/searchQueryOption";
 
 async function HomePage() {
   const queryClient = getServerQueryClient();
 
-  await queryClient.prefetchQuery(
-    searchQueryOption({ text: " ", searchType: "both", sort: "popular" })
-  );
+  queryClient.prefetchQuery(searchQueryOption({ text: "", searchType: "both", sort: "popular" }));
 
   return (
     <div>
@@ -1829,9 +1829,7 @@ export default BottomNavItem;
 export { default } from "./BottomNavItem";
 
 
---- src/app/_layout/BottomNav/BottomNav.tsx ---
-"use client";
-
+--- src/app/_layout/BottomNav/_constants/nav-item.ts ---
 import Home from "@/assets/icons/home/home.svg";
 import HomeFill from "@/assets/icons/home/home_fill.svg";
 import Search from "@/assets/icons/search/search.svg";
@@ -1839,10 +1837,9 @@ import SearchFill from "@/assets/icons/search/search_fill.svg";
 import MyList from "@/assets/icons/myLists/myLists.svg";
 import MyListFill from "@/assets/icons/myLists/myLists_fill.svg";
 import Profile from "@/assets/icons/profile/profile.svg";
-import BottomNavItem from "@/app/_layout/BottomNav/BottomNavItem";
-import { useSelectedLayoutSegments } from "next/navigation";
+import LogIn from "@/assets/icons/login/login.svg";
 
-const NAV_ITEMS = [
+export const BASE_NAV_ITEMS = [
   {
     path: "/",
     label: "Home",
@@ -1861,16 +1858,41 @@ const NAV_ITEMS = [
     Icon: MyList,
     IconFill: MyListFill,
   },
-  {
-    path: "/profile",
-    label: "Profile",
-    Icon: Profile,
-  },
 ] as const;
+
+export const PROFILE_ITEM = {
+  path: "/profile",
+  label: "Profile",
+  Icon: Profile,
+} as const;
+
+export const LOGIN_ITEM = {
+  path: "/login",
+  label: "Login",
+  Icon: LogIn,
+} as const;
+
+
+--- src/app/_layout/BottomNav/BottomNav.tsx ---
+"use client";
+
+import BottomNavItem from "@/app/_layout/BottomNav/BottomNavItem";
+import { useSelectedLayoutSegments } from "next/navigation";
+import { useSession } from "next-auth/react";
+import {
+  BASE_NAV_ITEMS,
+  LOGIN_ITEM,
+  PROFILE_ITEM,
+} from "@/app/_layout/BottomNav/_constants/nav-item";
 
 function BottomNav() {
   const segment = useSelectedLayoutSegments();
+  const { status } = useSession();
+
   if (segment[0] === "(auth)" || segment[1] === "profile") return null;
+
+  const NAV_ITEMS = [...BASE_NAV_ITEMS, status === "authenticated" ? PROFILE_ITEM : LOGIN_ITEM];
+
   return (
     <div>
       <div className="pt fixed bottom-0 flex w-full items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
@@ -3539,10 +3561,10 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
     maxAge: 7 * 24 * 60 * 60,
   },
-  // pages: {
-  //   signIn: "/login",
-  //   signOut: "/login?toast=true",
-  // },
+  pages: {
+    signIn: "/login",
+    //   signOut: "/login?toast=true",
+  },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
@@ -3697,18 +3719,20 @@ import { useMutation } from "@tanstack/react-query";
 import { LoginRequest } from "@/types/auth.type";
 import { signIn } from "next-auth/react";
 import { useToast } from "@/components/ui/Toast/useToast";
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 export function useLoginMutation() {
   const { toast } = useToast();
-  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   return useMutation({
     mutationFn: async (data: LoginRequest) => {
       const result = await signIn("credentials", {
         email: data.email,
         password: data.password,
-        redirect: false,
+        redirect: true,
+        callbackUrl,
       });
 
       if (result?.error) {
@@ -3716,7 +3740,6 @@ export function useLoginMutation() {
       }
     },
     onSuccess: () => {
-      router.push("/");
       toast({
         title: "Login Success",
         message: "Login Successfully Great!",
@@ -3802,7 +3825,6 @@ export function useAddSongToListMutation(listId: number) {
           type: "error",
         });
       } else {
-        // 일반 에러인 경우
         toast({
           title: "Error",
           message: error instanceof Error ? error.message : "Failed To Add Song To List",
@@ -4801,5 +4823,41 @@ export async function getTheme(): Promise<Theme> {
   const theme = cookieStore.get("theme")?.value as Theme;
   return theme === "dark" ? "dark" : "light";
 }
+
+
+--- src/middleware.ts ---
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  const token = await getToken({
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+
+  const protectedPaths = ["/mylist", "/profile", "/add-list"];
+  const isProtectedRoute = protectedPaths.includes(pathname);
+
+  const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/account");
+
+  if (isProtectedRoute && !token) {
+    const url = new URL("/login", request.url);
+    url.searchParams.set("callbackUrl", encodeURI(request.url));
+    return NextResponse.redirect(url);
+  }
+
+  if (isAuthPage && token) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|assets|icons).*)"],
+};
 
 

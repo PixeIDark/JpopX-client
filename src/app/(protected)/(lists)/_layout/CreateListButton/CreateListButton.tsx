@@ -9,22 +9,22 @@ function CreateListButton() {
   const { dialogOpen, setDialogOpen, inputRef, handleSubmit } = useCreateListSubmit();
 
   return (
-    <div className="fixed bottom-[77px] left-0 right-0 bg-body-default px-4 py-3">
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <Dialog.Trigger asChild>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog.Trigger asChild>
+        <div className="fixed inset-x-0 bottom-[77] mx-auto max-w-[calc(32rem-32px)] bg-body-default py-3">
           <Button variant="active">Create New List</Button>
-        </Dialog.Trigger>
-        <Dialog.Content>
-          <form onClick={handleSubmit} className="flex flex-col gap-4">
-            <h1 className="text-center">List Name</h1>
-            <Input ref={inputRef} type="text" placeholder="Please Write" />
-            <div className="mx-auto w-32">
-              <Button variant="active">Create</Button>
-            </div>
-          </form>
-        </Dialog.Content>
-      </Dialog>
-    </div>
+        </div>
+      </Dialog.Trigger>
+      <Dialog.Content>
+        <form onClick={handleSubmit} className="flex flex-col gap-4">
+          <h1 className="text-center">List Name</h1>
+          <Input ref={inputRef} type="text" placeholder="Please Write" />
+          <div className="mx-auto w-32">
+            <Button variant="active">Create</Button>
+          </div>
+        </form>
+      </Dialog.Content>
+    </Dialog>
   );
 }
 
