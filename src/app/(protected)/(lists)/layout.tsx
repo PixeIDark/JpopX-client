@@ -1,9 +1,9 @@
-"use server";
-
 import React from "react";
 import { getServerQueryClient } from "@/lib/tanStackQuery/getServerQueryClient";
 import { favoriteListsOption } from "@/query/favorite-lists/options/favoriteListsOption";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+
+export const dynamic = "force-dynamic";
 
 async function ListsLayout({
   children,
@@ -12,7 +12,7 @@ async function ListsLayout({
 }>) {
   const queryClient = getServerQueryClient();
 
-  queryClient.prefetchQuery(favoriteListsOption);
+  await queryClient.prefetchQuery(favoriteListsOption);
 
   return (
     <div className="relative">
