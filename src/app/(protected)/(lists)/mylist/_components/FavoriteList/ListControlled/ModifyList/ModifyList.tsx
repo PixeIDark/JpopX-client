@@ -45,9 +45,11 @@ function ModifyList({ listId, image, listName, onClose }: ModifyListProps) {
             onChange={handleFileChange}
           />
           <Input ref={inputRef} type="text" defaultValue={listName} />
-          <Button type="submit" variant="active">
-            Save
-          </Button>
+          <div className="mx-auto w-32">
+            <Button type="submit" variant="active">
+              Save
+            </Button>
+          </div>
         </form>
       </Dialog.Content>
     </Dialog>
