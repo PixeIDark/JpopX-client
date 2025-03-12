@@ -4,7 +4,6 @@ import React from "react";
 import { getServerQueryClient } from "@/lib/tanStackQuery/getServerQueryClient";
 import { favoriteListsOption } from "@/query/favorite-lists/options/favoriteListsOption";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import CreateListButton from "@/app/(protected)/(lists)/_layout/CreateListButton";
 
 async function ListsLayout({
   children,
@@ -20,7 +19,6 @@ async function ListsLayout({
       <HydrationBoundary state={dehydrate(queryClient)}>
         <div>{children}</div>
       </HydrationBoundary>
-      <CreateListButton />
     </div>
   );
 }

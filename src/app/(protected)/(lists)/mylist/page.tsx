@@ -3,6 +3,8 @@
 import FavoriteList from "@/app/(protected)/(lists)/mylist/_components/FavoriteList";
 import { useFavoriteListsQuery, useReorderFavoriteList } from "@/query/favorite-lists";
 import { useDragAndDrop } from "@/hooks/useDragAndDrop";
+import CreateListButton from "@/app/(protected)/(lists)/_components/CreateListButton";
+import React from "react";
 
 function MyListPage() {
   const { data: lists } = useFavoriteListsQuery();
@@ -12,7 +14,7 @@ function MyListPage() {
   if (!lists) return null;
 
   return (
-    <div>
+    <li>
       {lists.map((list, index) => (
         <FavoriteList
           key={list.id}
@@ -21,7 +23,8 @@ function MyListPage() {
           dragAndDropHandler={dragAndDropHandler}
         />
       ))}
-    </div>
+      <CreateListButton />
+    </li>
   );
 }
 

@@ -3,7 +3,7 @@
 import Button from "@/components/ui/Button";
 import Dialog from "@/components/ui/Dialog";
 import Input from "@/components/ui/Input";
-import { useCreateListSubmit } from "@/app/(protected)/(lists)/_layout/CreateListButton/_hooks/useCreateListSubmit";
+import { useCreateListSubmit } from "@/app/(protected)/(lists)/_components/CreateListButton/_hooks/useCreateListSubmit";
 
 function CreateListButton() {
   const { dialogOpen, setDialogOpen, inputRef, handleSubmit } = useCreateListSubmit();

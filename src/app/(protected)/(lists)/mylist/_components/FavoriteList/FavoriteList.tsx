@@ -29,7 +29,7 @@ function FavoriteList({ list, dragAndDropHandler, index }: FavoriteListProps) {
   const updatedTime = getTimeAgo(list.updated_at);
 
   return (
-    <div
+    <ul
       draggable={true}
       onDragStart={() => handleDragStart(list.id, list.order)}
       onDragEnter={() => handleDragEnter(list.order)}
@@ -58,7 +58,7 @@ function FavoriteList({ list, dragAndDropHandler, index }: FavoriteListProps) {
         </div>
       </Link>
       <ListControlled listId={list.id} image={list.image_url} listName={list.name} />
-    </div>
+    </ul>
   );
 }
 

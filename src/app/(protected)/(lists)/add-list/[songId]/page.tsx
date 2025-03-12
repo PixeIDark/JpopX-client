@@ -2,8 +2,9 @@
 
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { favoriteListsOption } from "@/query/favorite-lists/options/favoriteListsOption";
-import { use } from "react";
+import React, { use } from "react";
 import AddToList from "@/app/(protected)/(lists)/add-list/[songId]/_components/AddToList";
+import CreateListButton from "@/app/(protected)/(lists)/_components/CreateListButton";
 
 function AddListPage({ params }: { params: Promise<{ songId: string }> }) {
   const { data: lists } = useSuspenseQuery(favoriteListsOption);
@@ -14,10 +15,11 @@ function AddListPage({ params }: { params: Promise<{ songId: string }> }) {
   const parsedSongId = parseInt(songId);
 
   return (
-    <li className="flex flex-col">
+    <li>
       {lists.map((list) => (
         <AddToList key={list.id} list={list} songId={parsedSongId} />
       ))}
+      <CreateListButton />
     </li>
   );
 }

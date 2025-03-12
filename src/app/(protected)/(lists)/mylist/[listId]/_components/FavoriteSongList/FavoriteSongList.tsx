@@ -3,6 +3,7 @@
 import { useFavoriteListSongsQuery, useReorderSongMutation } from "@/query/favorite-lists";
 import FavoriteSongCard from "@/app/(protected)/(lists)/mylist/[listId]/_components/FavoriteSongList/FavoirteSongCard";
 import { useDragAndDrop } from "@/hooks/useDragAndDrop";
+import NotFound from "@/components/common/NotFound/NotFound";
 
 interface FavoriteSongListProps {
   listId: number;
@@ -13,7 +14,7 @@ function FavoriteSongList({ listId }: FavoriteSongListProps) {
   const { mutate: reorderSongMutate } = useReorderSongMutation(listId);
   const dragAndDropHandler = useDragAndDrop(reorderSongMutate);
 
-  if (!list) return null;
+  if (!list?.length) return <NotFound text="Don't have any items" />;
 
   return (
     <li className="flex flex-col">

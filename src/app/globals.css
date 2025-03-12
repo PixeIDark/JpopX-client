@@ -79,3 +79,7 @@ body {
     background: var(--color-body-default);
     font-family: Pretendard Variable, system-ui, sans-serif;
 }
+
+li {
+    list-style-type: none;
+}

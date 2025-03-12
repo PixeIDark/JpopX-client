@@ -30,11 +30,13 @@ function ModifyList({ listId, image, listName, onClose }: ModifyListProps) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <h1 className="mx-auto">Change List</h1>
           <button type="button" className="mx-auto" onClick={handleImageClick}>
-            <Picture
-              src={previewUrl || image}
-              alt="리스트 이미지"
-              className="h-[200] w-[200] rounded-lg"
-            />
+            <div className="h-[200] w-[200]">
+              <Picture
+                src={previewUrl || image}
+                alt="리스트 이미지"
+                className="h-[200] w-[200] rounded-lg"
+              />
+            </div>
             <p className="text-text-p">이미지 변경</p>
           </button>
           <input
