@@ -19,12 +19,11 @@ function BottomNav() {
 
   return (
     <div>
-      <div className="pt fixed bottom-0 flex w-full items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
+      <div className="sticky bottom-0 z-10 flex items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
         {NAV_ITEMS.map((item) => (
           <BottomNavItem key={item.path} item={item} />
         ))}
       </div>
-      <div className="h-[77px] w-full" />
     </div>
   );
 }

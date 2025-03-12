@@ -33,7 +33,7 @@ function Main({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <main ref={mainRef} className={`overflow-y-auto pl-4 ${hasScrollbar ? "pr-3" : "pr-4"}`}>
+    <main ref={mainRef} className={`h-full overflow-y-auto pl-4 ${hasScrollbar ? "pr-3" : "pr-4"}`}>
       {children}
     </main>
   );
