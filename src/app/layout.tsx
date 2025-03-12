@@ -10,8 +10,8 @@ import BottomNav from "@/app/_layout/BottomNav";
 import { authOptions } from "@/lib/next-auth/nextAuth";
 import ToastProvider from "@/components/ui/Toast/ToastContext";
 import { ScrollPositionProvider } from "@/app/_providers/ScrollPositionProvider";
-import { getTheme } from "@/utils/theme";
 import Main from "@/app/_layout/Main";
+import { ThemeProvider } from "@/app/_providers/ThemeProvider";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -29,23 +29,24 @@ async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const theme = await getTheme();
   const session = await getServerSession(authOptions);
 
   return (
-    <html lang="ko" data-theme={theme} suppressHydrationWarning>
+    <html lang="ko" suppressHydrationWarning>
       <body className={`${manrope.variable} antialiasing`}>
         <SessionProvider session={session}>
           <QueryProvider>
-            <ToastProvider maxToasts={5}>
-              <ScrollPositionProvider>
+            <ScrollPositionProvider>
+              <ThemeProvider>
                 <div className="mx-auto flex h-screen max-w-lg flex-col">
-                  <TopNav currentTheme={theme} />
-                  <Main>{children}</Main>
-                  <BottomNav />
+                  <ToastProvider maxToasts={5}>
+                    <TopNav />
+                    <Main>{children}</Main>
+                    <BottomNav />
+                  </ToastProvider>
                 </div>
-              </ScrollPositionProvider>
-            </ToastProvider>
+              </ThemeProvider>
+            </ScrollPositionProvider>
           </QueryProvider>
         </SessionProvider>
       </body>
