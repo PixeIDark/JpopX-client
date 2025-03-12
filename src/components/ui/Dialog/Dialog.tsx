@@ -57,7 +57,7 @@ function Dialog({ children, open, onOpenChange }: DialogProps) {
   return <DialogContext.Provider value={value}>{children}</DialogContext.Provider>;
 }
 
-interface TriggerProps {
+interface TriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
   className?: string;
   asChild?: boolean;

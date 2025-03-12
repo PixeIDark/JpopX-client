@@ -50,7 +50,7 @@ function Sheet({ children, open, onOpenChange }: SheetProps) {
   return <SheetContext.Provider value={value}>{children}</SheetContext.Provider>;
 }
 
-interface TriggerProps {
+interface TriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
   asChild?: boolean;
   className?: string;
