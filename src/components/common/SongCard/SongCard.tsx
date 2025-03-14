@@ -1,7 +1,6 @@
 import { SearchItems } from "@/types/search.type";
-import Button from "@/components/ui/Button";
 import Picture from "@/components/ui/Picture";
-import Link from "next/link";
+import AddSongToListButton from "@/components/common/SongCard/AddSongToListButton/AddSongToListButton";
 
 interface SongCardProps {
   song: SearchItems;
@@ -38,9 +37,7 @@ function SongCard({ song }: SongCardProps) {
           <p className="text-text-ky">KY {song.kumyoung_number}</p>
         </div>
       </div>
-      <Button variant="ghost" className="h-8 min-w-20 max-w-20 text-sm font-medium" asChild>
-        <Link href={`/add-list/${song.song_id}`}>Add</Link>
-      </Button>
+      <AddSongToListButton songId={song.song_id} />
     </ul>
   );
 }
