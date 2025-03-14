@@ -1,23 +1,22 @@
 "use client";
 
-import Link from "next/link";
 import Button from "@/components/ui/Button";
-import { useSession } from "next-auth/react";
-import { createCallbackUrl } from "@/utils/createCallbackUrl";
+import { useAddSongToListButton } from "@/components/common/SongCard/AddSongToListButton/_hooks/useAddSongToListButton";
 
 interface AddSongToListButtonProps {
   songId: number;
 }
 
 function AddSongToListButton({ songId }: AddSongToListButtonProps) {
-  const { status } = useSession();
-
-  const path =
-    status === "authenticated" ? `/add-list/${songId}` : createCallbackUrl(`/add-list/${songId}`);
+  const { handlePathToRightPage } = useAddSongToListButton(songId);
 
   return (
-    <Button variant="ghost" className="h-8 min-w-20 max-w-20 text-sm font-medium" asChild>
-      <Link href={path}>Add</Link>
+    <Button
+      onClick={handlePathToRightPage}
+      variant="ghost"
+      className="h-8 min-w-20 max-w-20 text-sm font-medium"
+    >
+      Add
     </Button>
   );
 }
