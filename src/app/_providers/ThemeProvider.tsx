@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { getTheme, setTheme as setThemeUtil, Theme } from "@/utils/theme";
+import React, { createContext, useContext, useState } from "react";
+import { setTheme as setThemeUtil, Theme } from "@/utils/theme";
 
 type ThemeContextType = {
   theme: Theme;
@@ -10,17 +10,14 @@ type ThemeContextType = {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("light");
+interface ThemeProviderProps extends React.PropsWithChildren {
+  initialTheme: Theme;
+}
 
-  useEffect(() => {
-    // 클라이언트 사이드에서만 실행
-    const savedTheme = getTheme() || "light";
-    setThemeState(savedTheme);
-    document.documentElement.setAttribute("data-theme", savedTheme);
-  }, []);
+export function ThemeProvider({ initialTheme, children }: ThemeProviderProps) {
+  const [theme, setThemeState] = useState<Theme>(initialTheme);
 
-  const toggleTheme = () => {
+  const toggleTheme = async () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setThemeState(newTheme);
     setThemeUtil(newTheme);

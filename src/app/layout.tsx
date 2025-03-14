@@ -12,6 +12,7 @@ import ToastProvider from "@/components/ui/Toast/ToastContext";
 import { ScrollPositionProvider } from "@/app/_providers/ScrollPositionProvider";
 import Main from "@/app/_layout/Main";
 import { ThemeProvider } from "@/app/_providers/ThemeProvider";
+import { getTheme } from "@/utils/theme";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -32,14 +33,15 @@ async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getServerSession(authOptions);
+  const theme = await getTheme();
 
   return (
-    <html lang="ko" suppressHydrationWarning>
+    <html lang="ko" data-theme={theme} suppressHydrationWarning>
       <body className={`${manrope.variable} antialiasing`}>
         <SessionProvider session={session}>
           <QueryProvider>
             <ScrollPositionProvider>
-              <ThemeProvider>
+              <ThemeProvider initialTheme={theme}>
                 <div className="mx-auto flex h-screen max-w-lg flex-col">
                   <ToastProvider maxToasts={5}>
                     <TopNav />
