@@ -108,8 +108,8 @@ export const authOptions: NextAuthOptions = {
     maxAge: 7 * 24 * 60 * 60,
   },
   pages: {
-    signIn: "/login",
-    //   signOut: "/login?toast=true",
+    // signIn: "/login",
+    // signOut: "/login?toast=true",
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
