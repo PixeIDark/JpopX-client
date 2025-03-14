@@ -4,7 +4,6 @@ import FavoriteList from "@/app/(protected)/(lists)/mylist/_components/FavoriteL
 import { useFavoriteListsQuery, useReorderFavoriteList } from "@/query/favorite-lists";
 import { useDragAndDrop } from "@/hooks/useDragAndDrop";
 import CreateListButton from "@/app/(protected)/(lists)/_components/CreateListButton";
-import React from "react";
 
 export const dynamic = "force-dynamic";
 
