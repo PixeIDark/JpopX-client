@@ -18,12 +18,10 @@ function BottomNav() {
   const NAV_ITEMS = [...BASE_NAV_ITEMS, status === "authenticated" ? PROFILE_ITEM : LOGIN_ITEM];
 
   return (
-    <div>
-      <div className="sticky bottom-0 z-10 flex items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
-        {NAV_ITEMS.map((item) => (
-          <BottomNavItem key={item.path} item={item} />
-        ))}
-      </div>
+    <div className="fixed inset-x-0 bottom-0 z-10 mx-auto flex w-full max-w-lg items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
+      {NAV_ITEMS.map((item) => (
+        <BottomNavItem key={item.path} item={item} />
+      ))}
     </div>
   );
 }

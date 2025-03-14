@@ -1,9 +1,12 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
+import { useAndroid } from "@/hooks/useAndroid";
 
 function Main({ children }: { children: React.ReactNode }) {
   const mainRef = useRef<HTMLElement>(null);
   const [hasScrollbar, setHasScrollbar] = useState(false);
+  const isAndroid = useAndroid();
 
   useEffect(() => {
     const checkForScrollbar = () => {
@@ -32,9 +35,13 @@ function Main({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const overflowClass = isAndroid ? "overflow-touch" : "overflow-y-auto";
+  const paddingClass = hasScrollbar ? "pr-3 pl-4 " : "pr-4 pl-4 ";
+
   return (
-    <main ref={mainRef} className={`h-full overflow-y-auto pl-4 ${hasScrollbar ? "pr-3" : "pr-4"}`}>
+    <main ref={mainRef} className={`h-full ${overflowClass} ${paddingClass}`}>
       {children}
+      <div className="h-[77] w-3" />
     </main>
   );
 }
