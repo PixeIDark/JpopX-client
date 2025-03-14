@@ -3,6 +3,7 @@
 import React, { createContext, ReactNode, useCallback, useState } from "react";
 import ToastContainer from "./ToastContainer";
 import { ToastType } from "./Toast";
+import { generateUUID } from "@/utils/generateUUID";
 
 export interface ToastItem {
   id: string;
@@ -30,7 +31,7 @@ function ToastProvider({ children, maxToasts = 5 }: ToastProviderProps) {
   const toast = useCallback(
     (options: Omit<ToastItem, "id">) => {
       const newToast = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         ...options,
       };
 
