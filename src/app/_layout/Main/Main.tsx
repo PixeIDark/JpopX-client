@@ -41,7 +41,7 @@ function Main({ children }: { children: React.ReactNode }) {
   return (
     <main ref={mainRef} className={`h-full ${overflowClass} ${paddingClass}`}>
       {children}
-      <div className="h-[77] w-3" />
+      <div className="h-[77px] w-full" />
     </main>
   );
 }
