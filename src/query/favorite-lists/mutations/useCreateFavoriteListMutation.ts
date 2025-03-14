@@ -4,6 +4,7 @@ import { CreateFavoriteListRequest, FavoriteList } from "@/types/favorite-list.t
 import { useToast } from "@/components/ui/Toast/useToast";
 import { getFavoriteListsKey } from "@/query/favorite-lists";
 import { getRandomInteger } from "@/utils/getRandomInteger";
+import { getKoreanISOTime } from "@/utils/getKoreanISOTime";
 
 export function useCreateFavoriteListMutation() {
   const queryClient = useQueryClient();
@@ -13,23 +14,22 @@ export function useCreateFavoriteListMutation() {
     mutationFn: (data: CreateFavoriteListRequest) => favoriteListsApi.createList(data),
     onMutate: (data) => {
       queryClient.cancelQueries({ queryKey: getFavoriteListsKey() });
-      const previousLists = queryClient.getQueryData<FavoriteList[]>(getFavoriteListsKey());
+      const previousLists = queryClient.getQueryData<FavoriteList[]>(getFavoriteListsKey()) || [];
 
-      if (previousLists) {
-        const newList = {
-          id: -1,
-          user_id: -getRandomInteger(),
-          name: data.name,
-          order: previousLists[previousLists.length - 1].order + 1,
-          image_url: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          deleted_at: null,
-        };
-        queryClient.setQueryData(getFavoriteListsKey(), [...previousLists, newList]);
+      const newList = {
+        id: -1,
+        user_id: -getRandomInteger(),
+        name: data.name,
+        order: previousLists.length > 0 ? previousLists[previousLists.length - 1].order + 1 : 1,
+        image_url: null,
+        created_at: getKoreanISOTime(),
+        updated_at: getKoreanISOTime(),
+        deleted_at: null,
+      };
 
-        return { previousLists };
-      }
+      queryClient.setQueryData(getFavoriteListsKey(), [...previousLists, newList]);
+
+      return { previousLists };
     },
     onSuccess: () => {
       toast({
