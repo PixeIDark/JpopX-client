@@ -5,8 +5,6 @@ import { useFavoriteListsQuery, useReorderFavoriteList } from "@/query/favorite-
 import { useDragAndDrop } from "@/hooks/useDragAndDrop";
 import CreateListButton from "@/app/(protected)/(lists)/_components/CreateListButton";
 
-export const dynamic = "force-dynamic";
-
 function MyListPage() {
   const { data: lists } = useFavoriteListsQuery();
   const { mutate: reorderFavoriteList } = useReorderFavoriteList();
