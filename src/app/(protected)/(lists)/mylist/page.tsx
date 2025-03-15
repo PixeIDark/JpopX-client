@@ -12,7 +12,7 @@ function MyListPage() {
   const { mutate: reorderFavoriteList } = useReorderFavoriteList();
   const dragAndDropHandler = useDragAndDrop(reorderFavoriteList);
 
-  if (!lists) return null;
+  // if (!lists) return null;
 
   return (
     <li>

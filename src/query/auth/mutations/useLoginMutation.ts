@@ -23,8 +23,8 @@ export function useLoginMutation() {
       }
     },
     onSuccess: () => {
-      router.refresh();
       router.push(callbackUrl);
+      
       toast({
         title: "Login Success",
         message: "Login Successfully Great!",
