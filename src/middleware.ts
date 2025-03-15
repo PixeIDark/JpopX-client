@@ -21,9 +21,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // if (isAuthPage && token) {
-  //   return NextResponse.redirect(new URL("/", request.url));
-  // }
+  if (isAuthPage && token) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
 
   return NextResponse.next();
 }
