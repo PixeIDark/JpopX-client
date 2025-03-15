@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { LoginRequest } from "@/types/auth.type";
-import { getSession, signIn } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useToast } from "@/components/ui/Toast/useToast";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -21,10 +21,9 @@ export function useLoginMutation() {
       if (result?.error) {
         throw new Error(result.error);
       }
-
-      await getSession();
     },
     onSuccess: () => {
+      router.refresh();
       router.push(callbackUrl);
       toast({
         title: "Login Success",
