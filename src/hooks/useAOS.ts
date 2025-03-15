@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export function useAndroid() {
+export function useAOS() {
   const [isAndroid, setIsAndroid] = useState(false);
 
   useEffect(() => {
