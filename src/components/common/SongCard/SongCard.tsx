@@ -16,7 +16,7 @@ function SongCard({ song }: SongCardProps) {
         <Picture
           src={song.thumbnail_url}
           alt={`${artist}'s ${title} Image`}
-          className="h-full w-full rounded-xl object-fill"
+          className="h-[70px] w-[70px] rounded-xl object-fill"
         />
       </div>
       <div className="ml-3 flex w-full flex-col justify-between">
