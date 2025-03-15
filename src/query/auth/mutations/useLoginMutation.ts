@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { LoginRequest } from "@/types/auth.type";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import { useToast } from "@/components/ui/Toast/useToast";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -21,6 +21,8 @@ export function useLoginMutation() {
       if (result?.error) {
         throw new Error(result.error);
       }
+
+      await getSession();
     },
     onSuccess: () => {
       router.push(callbackUrl);
