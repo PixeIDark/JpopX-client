@@ -1,29 +1,39 @@
 "use client";
 
-import BottomNavItem from "@/app/_layout/BottomNav/BottomNavItem";
-import { useSelectedLayoutSegments } from "next/navigation";
-import { useSession } from "next-auth/react";
-import {
-  BASE_NAV_ITEMS,
-  LOGIN_ITEM,
-  PROFILE_ITEM,
-} from "@/app/_layout/BottomNav/_constants/nav-item";
+import React from "react";
+import { usePathname, useRouter } from "next/navigation";
 
-function BottomNav() {
-  const segment = useSelectedLayoutSegments();
-  const { status } = useSession();
+interface BottomNavItemProps {
+  path: string;
+  label: string;
+  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  IconFill?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+}
 
-  if (segment[0] === "(auth)" || segment[1] === "profile") return null;
+function BottomNavItem({ item }: { item: BottomNavItemProps }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const isActive = item.path === pathname;
 
-  const NAV_ITEMS = [...BASE_NAV_ITEMS, status === "authenticated" ? PROFILE_ITEM : LOGIN_ITEM];
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    router.push(item.path);
+  };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-10 mx-auto flex w-full max-w-lg items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
-      {NAV_ITEMS.map((item) => (
-        <BottomNavItem key={item.path} item={item} />
-      ))}
-    </div>
+    <a
+      href={item.path}
+      onClick={handleClick}
+      className="flex w-16 flex-col items-center justify-center gap-1"
+    >
+      {isActive ? (
+        item.IconFill && <item.IconFill width={24} height={24} className="fill-icon-bg" />
+      ) : (
+        <item.Icon width={24} height={24} className="fill-icon-stroke" />
+      )}
+      <p className="text-xs text-text-p">{item.label}</p>
+    </a>
   );
 }
 
-export default BottomNav;
+export default BottomNavItem;

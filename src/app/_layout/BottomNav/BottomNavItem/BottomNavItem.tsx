@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 
 interface BottomNavItemProps {
   path: string;
@@ -13,17 +12,23 @@ interface BottomNavItemProps {
 
 function BottomNavItem({ item }: { item: BottomNavItemProps }) {
   const pathname = usePathname();
-
+  const router = useRouter();
   const isActive = item.path === pathname;
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    router.push(item.path);
+  };
+
   return (
-    <Link href={item.path} className="flex w-16 flex-col items-center justify-center gap-1">
+    <a href={item.path} onClick={handleClick} className="flex w-16 flex-col items-center justify-center gap-1">
       {isActive ? (
         item.IconFill && <item.IconFill width={24} height={24} className="fill-icon-bg" />
       ) : (
         <item.Icon width={24} height={24} className="fill-icon-stroke" />
       )}
       <p className="text-xs text-text-p">{item.label}</p>
-    </Link>
+    </a>
   );
 }
 
