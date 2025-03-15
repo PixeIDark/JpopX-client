@@ -21,7 +21,11 @@ function BottomNavItem({ item }: { item: BottomNavItemProps }) {
   };
 
   return (
-    <a href={item.path} onClick={handleClick} className="flex w-16 flex-col items-center justify-center gap-1">
+    <a
+      href={item.path}
+      onClick={handleClick}
+      className="flex w-16 flex-col items-center justify-center gap-1"
+    >
       {isActive ? (
         item.IconFill && <item.IconFill width={24} height={24} className="fill-icon-bg" />
       ) : (
