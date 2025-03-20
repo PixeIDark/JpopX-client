@@ -1,11 +1,11 @@
 "use client";
 
 import { searchQueryOption } from "@/query/search/options/searchQueryOption";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import SongCard from "@/components/common/SongCard";
 
 function PopularityList() {
-  const { data: songs } = useSuspenseQuery(
+  const { data: songs } = useQuery(
     searchQueryOption({ text: "", searchType: "both", sort: "popular" })
   );
 
