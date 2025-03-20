@@ -8,9 +8,7 @@ export const dynamic = "force-dynamic";
 async function HomePage() {
   const queryClient = getServerQueryClient();
 
-  await queryClient.prefetchQuery(
-    searchQueryOption({ text: "", searchType: "both", sort: "popular" })
-  );
+  queryClient.prefetchQuery(searchQueryOption({ text: "", searchType: "both", sort: "popular" }));
 
   return (
     <div>

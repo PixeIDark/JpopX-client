@@ -14,7 +14,7 @@ export default async function SearchPage({
   const queryClient = getServerQueryClient();
 
   if (params.text) {
-    await queryClient.prefetchQuery(searchQueryOption(params));
+    queryClient.prefetchQuery(searchQueryOption(params));
   }
 
   return (
