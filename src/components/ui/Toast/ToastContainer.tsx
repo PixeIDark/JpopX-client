@@ -8,7 +8,7 @@ interface ToastContainerProps {
 
 function ToastContainer({ toasts, removeToast }: ToastContainerProps) {
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col" aria-live="polite">
+    <div className="fixed inset-x-0 bottom-20 z-50 flex flex-col" aria-live="polite">
       {toasts.map((toast) => (
         <Toast
           key={toast.id}

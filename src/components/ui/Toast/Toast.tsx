@@ -43,7 +43,7 @@ function Toast({
 
   return (
     <div
-      className={`${styles[type]} animate-fadeIn border-1 mb-2 flex min-w-80 max-w-md items-start justify-between rounded-md border-l-4 border-stroke-default bg-body-default p-4 shadow-md`}
+      className={`${styles[type]} border-1 mx-auto mb-2 flex w-full min-w-80 max-w-md animate-fadeIn items-start justify-between rounded-md border-l-4 border-stroke-default bg-body-default p-4 shadow-md`}
       role="alert"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
