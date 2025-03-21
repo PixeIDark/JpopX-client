@@ -5,8 +5,12 @@ import Dialog from "@/components/ui/Dialog";
 import Input from "@/components/ui/Input";
 import { useCreateListSubmit } from "@/app/(protected)/(lists)/_components/CreateListButton/_hooks/useCreateListSubmit";
 
-function CreateListButton() {
-  const { dialogOpen, setDialogOpen, inputRef, handleSubmit } = useCreateListSubmit();
+interface CreateListButtonProps {
+  isLists?: boolean;
+}
+
+function CreateListButton({ isLists }: CreateListButtonProps) {
+  const { dialogOpen, setDialogOpen, inputRef, handleSubmit } = useCreateListSubmit(isLists);
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

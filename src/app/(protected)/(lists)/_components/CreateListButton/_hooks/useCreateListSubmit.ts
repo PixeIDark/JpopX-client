@@ -1,10 +1,10 @@
 import { useCreateFavoriteListMutation } from "@/query/favorite-lists";
 import { FormEvent, useRef, useState } from "react";
 
-export function useCreateListSubmit() {
+export function useCreateListSubmit(isLists?: boolean) {
   const { mutate: createFavoriteListMutate } = useCreateFavoriteListMutation();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(!(isLists ?? true));
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
