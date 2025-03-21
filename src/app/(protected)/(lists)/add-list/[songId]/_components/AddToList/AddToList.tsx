@@ -14,8 +14,10 @@ interface FavoriteListProps {
 function AddToList({ list, songId }: FavoriteListProps) {
   const { isChecked, handleToggle } = useAddToListToggle(list.id, songId);
 
+  const listClass = isChecked ? "border-button-active " : "border-body-default";
+
   return (
-    <div className="flex w-full items-center justify-between py-2">
+    <div className={`${listClass} flex w-full items-center justify-between rounded-xl border py-2`}>
       <Link href={`/mylist/${list.id}`} className="flex w-full items-center gap-4">
         <Picture
           src={list.image_url}
