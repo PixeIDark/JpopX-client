@@ -42,7 +42,7 @@ function FavoriteList({ list, dragAndDropHandler, index }: FavoriteListProps) {
     >
       <Link
         href={`/mylist/${list.id}`}
-        className="flex w-full items-center justify-between py-2"
+        className="flex w-full items-center justify-between border-body-default py-2 hover:opacity-60"
         onClick={(e) => isDragging && e.preventDefault()}
       >
         <div className="flex items-center gap-4">
