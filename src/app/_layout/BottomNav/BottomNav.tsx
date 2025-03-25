@@ -15,8 +15,8 @@ type NavItem = (typeof BASE_NAV_ITEMS)[number] | typeof PROFILE_ITEM | typeof LO
 function BottomNav() {
   const segment = useSelectedLayoutSegments();
   const { status } = useSession();
-
   const [navItems, setNavItems] = useState<NavItem[]>([...BASE_NAV_ITEMS]);
+  console.log(status);
 
   useEffect(() => {
     setNavItems([...BASE_NAV_ITEMS, status === "authenticated" ? PROFILE_ITEM : LOGIN_ITEM]);
