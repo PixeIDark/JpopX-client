@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  swcMinify: true,
+
   webpack(config) {
     config.module.rules.push({
       test: /\.svg$/,
@@ -20,7 +22,7 @@ const nextConfig: NextConfig = {
       },
     },
   },
-  
+
   images: {
     domains: ["res.cloudinary.com"],
   },
