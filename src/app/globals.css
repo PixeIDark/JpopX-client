@@ -75,7 +75,6 @@
 }
 
 body {
-    overflow: hidden;
     color: var(--color-text-h);
     background: var(--color-body-default);
     font-family: Pretendard Variable, system-ui, sans-serif;
