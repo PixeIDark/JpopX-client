@@ -10,7 +10,7 @@ function Main({ children }: { children: React.ReactNode }) {
   const isAOS = useAOS();
   const isIOS = useIOS();
 
-  const overflowClass = isAOS ? "overflow-touch" : "overflow-y-auto";
+  const overflowClass = isAOS ? "overflow-touch overflow-y-auto" : "overflow-y-auto";
   const paddingClass = hasScrollbar ? "pr-3 pl-4 " : "pr-4 pl-4 ";
   const blackClass = isIOS ? "h-[170px] w-full" : "h-[77px] w-full";
 
