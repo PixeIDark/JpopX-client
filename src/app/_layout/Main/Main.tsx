@@ -16,6 +16,7 @@ function Main({ children }: { children: React.ReactNode }) {
 
   return (
     <main ref={scrollRef} className={`h-full ${overflowClass} ${paddingClass}`}>
+      <div className="h-[72px] w-full" />
       {children}
       <div className={blackClass} />
     </main>
