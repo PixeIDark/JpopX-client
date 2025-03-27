@@ -4,7 +4,7 @@ import { FavoriteList, ReorderListRequest } from "@/types/favorite-list.type";
 import { favoriteListsApi } from "@/api/favorite-lists";
 import { getFavoriteListsKey } from "@/query/favorite-lists";
 
-export function useReorderFavoriteList() {
+export function useReorderFavoriteListMutation() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -16,19 +16,10 @@ export function useReorderFavoriteList() {
       const previousLists = queryClient.getQueryData<FavoriteList[]>(getFavoriteListsKey());
 
       if (previousLists) {
-        const updatedLists = [...previousLists];
-
-        const draggedItemIndex = updatedLists.findIndex((list) => list.id === data.listId);
-        if (draggedItemIndex === -1) return { previousLists };
-
-        const targetItemIndex = updatedLists.findIndex((list) => list.order === data.newOrder);
-        if (targetItemIndex === -1) return { previousLists };
-
-        const draggedItemOrder = updatedLists[draggedItemIndex].order;
-        updatedLists[draggedItemIndex].order = updatedLists[targetItemIndex].order;
-        updatedLists[targetItemIndex].order = draggedItemOrder;
-
-        updatedLists.sort((a, b) => a.order - b.order);
+        const updatedLists = previousLists.map((list) => {
+          if (list.id === data.listId) list.order = data.newOrder + 0.5;
+          return list;
+        });
 
         queryClient.setQueryData(getFavoriteListsKey(), updatedLists);
       }

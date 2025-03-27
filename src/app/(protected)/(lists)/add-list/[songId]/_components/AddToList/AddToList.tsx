@@ -19,7 +19,7 @@ function AddToList({ list, songId }: FavoriteListProps) {
   const updatedTime = getTimeAgo(list.updated_at);
 
   return (
-    <div
+    <ul
       className={`${listClass} flex w-full items-center justify-between rounded-xl border py-2 hover:opacity-60`}
     >
       <Link href={`/mylist/${list.id}`} className="flex w-full items-center gap-4">
@@ -36,7 +36,7 @@ function AddToList({ list, songId }: FavoriteListProps) {
       <button onClick={handleToggle} className="p-4">
         <CheckFavoriteList isChecked={isChecked} />
       </button>
-    </div>
+    </ul>
   );
 }
 

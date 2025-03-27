@@ -17,19 +17,10 @@ export function useReorderSongMutation(listId: number) {
       );
 
       if (previousSongs) {
-        const updatedSongs = [...previousSongs];
-
-        const draggedItemIndex = updatedSongs.findIndex((song) => song.id === data.favoriteId);
-        if (draggedItemIndex === -1) return { previousSongs };
-
-        const targetItemIndex = updatedSongs.findIndex((song) => song.order === data.newOrder);
-        if (targetItemIndex === -1) return { previousSongs };
-
-        const draggedItemOrder = updatedSongs[draggedItemIndex].order;
-        updatedSongs[draggedItemIndex].order = updatedSongs[targetItemIndex].order;
-        updatedSongs[targetItemIndex].order = draggedItemOrder;
-
-        updatedSongs.sort((a, b) => a.order - b.order);
+        const updatedSongs = previousSongs.map((song) => {
+          if (song.id === data.favoriteId) song.order = data.newOrder + 0.5;
+          return song;
+        });
 
         queryClient.setQueryData(getFavoriteListSongsKey(listId), updatedSongs);
       }
