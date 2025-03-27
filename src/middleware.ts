@@ -10,20 +10,21 @@ export async function middleware(request: NextRequest) {
     secret: process.env.NEXTAUTH_SECRET,
   });
 
+  const isAuthenticated = (token?.refreshTokenExpires ?? 0) > Date.now();
   const protectedPaths = ["/mylist", "/profile", "/add-list"];
   const isProtectedRoute = protectedPaths.includes(pathname);
 
-  // const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/account");
+  const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/account");
 
-  if (isProtectedRoute && !token) {
+  if (isProtectedRoute && !isAuthenticated) {
     const url = new URL("/login", request.url);
     url.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(url);
   }
 
-  // if (isAuthPage && token) {
-  //   return NextResponse.redirect(new URL("/", request.url));
-  // }
+  if (isAuthPage && isAuthenticated) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
 
   return NextResponse.next();
 }
