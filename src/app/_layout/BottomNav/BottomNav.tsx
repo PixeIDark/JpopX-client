@@ -7,16 +7,12 @@ import {
   LOGIN_ITEM,
   PROFILE_ITEM,
 } from "@/app/_layout/BottomNav/_constants/nav-item";
-import { useEffect, useState } from "react";
-import { hasSessionExpired } from "@/utils/hasSessionExpired";
+import { useSession } from "next-auth/react";
 
 function BottomNav() {
   const segment = useSelectedLayoutSegments();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    hasSessionExpired().then((res) => setIsAuthenticated(res));
-  }, []);
+  const { data: session } = useSession();
+  const isAuthenticated = (session?.refreshTokenExpires ?? 0) > Date.now();
 
   if (segment[0] === "(auth)" || segment[1] === "profile") return null;
 

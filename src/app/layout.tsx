@@ -2,12 +2,10 @@ import React from "react";
 import "./globals.css";
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
-import { getServerSession } from "next-auth";
 import SessionProvider from "@/app/_providers/SessionProvider";
 import QueryProvider from "@/app/_providers/QueryProvider";
 import TopNav from "@/app/_layout/TopNav";
 import BottomNav from "@/app/_layout/BottomNav";
-import { authOptions } from "@/lib/next-auth/nextAuth";
 import ToastProvider from "@/components/ui/Toast/ToastContext";
 import { ScrollPositionProvider } from "@/app/_providers/ScrollPositionProvider";
 import Main from "@/app/_layout/Main";
@@ -32,13 +30,12 @@ async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await getServerSession(authOptions);
   const theme = await getTheme();
 
   return (
     <html lang="ko" data-theme={theme} suppressHydrationWarning>
       <body className={`${manrope.variable} antialiasing`}>
-        <SessionProvider session={session}>
+        <SessionProvider>
           <QueryProvider>
             <ScrollPositionProvider>
               <ThemeProvider initialTheme={theme}>
