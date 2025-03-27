@@ -15,7 +15,7 @@ async function ListsLayout({
   queryClient.prefetchQuery(favoriteListsOption);
 
   return (
-    <div className="relative">
+    <div>
       <HydrationBoundary state={dehydrate(queryClient)}>
         <div>{children}</div>
       </HydrationBoundary>

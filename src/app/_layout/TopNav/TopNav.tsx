@@ -25,7 +25,7 @@ function TopNav() {
     "Unknown Page";
 
   return (
-    <div className="pt fixed inset-x-0 top-0 mx-auto flex w-full max-w-lg items-center justify-between bg-body-default px-4 pb-3 pt-5">
+    <div className="pt fixed inset-x-0 top-0 z-10 mx-auto flex w-full max-w-lg items-center justify-between bg-body-default px-4 pb-3 pt-5">
       <button onClick={() => router.back()} className="p-2">
         <ArrowLeft size={24} strokeWidth={1.5} />
       </button>
