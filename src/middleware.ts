@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
   const protectedPaths = ["/mylist", "/profile", "/add-list"];
   const isProtectedRoute = protectedPaths.includes(pathname);
 
-  const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/account");
+  // const isAuthPage = pathname.startsWith("/login") || pathname.startsWith("/account");
 
   if (isProtectedRoute && !token) {
     const url = new URL("/login", request.url);
@@ -21,9 +21,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (isAuthPage && token) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
+  // if (isAuthPage && token) {
+  //   return NextResponse.redirect(new URL("/", request.url));
+  // }
 
   return NextResponse.next();
 }
