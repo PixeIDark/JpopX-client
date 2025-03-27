@@ -26,6 +26,7 @@ export const authOptions: NextAuthOptions = {
               email: user.email,
               name: user.name,
               profile_image_url: user.profile_image_url,
+              refreshTokenExpires: Date.now() + 7 * 24 * 60 * 60 * 1000,
             };
           }
 
@@ -65,6 +66,7 @@ export const authOptions: NextAuthOptions = {
             email: data.email,
             name: data.name,
             profile_image_url: data.profile_image_url,
+            refreshTokenExpires: Date.now() + 7 * 24 * 60 * 60 * 1000,
           };
         } catch (error) {
           return null;
@@ -86,6 +88,7 @@ export const authOptions: NextAuthOptions = {
         token.name = user.name;
         token.email = user.email;
         token.profile_image_url = user.profile_image_url;
+        token.refreshTokenExpires = user.refreshTokenExpires;
       }
 
       if (trigger === "update" && session?.user) {
@@ -99,6 +102,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token) {
         session.user = token;
+        session.refreshTokenExpires = token.refreshTokenExpires;
       }
       return session;
     },

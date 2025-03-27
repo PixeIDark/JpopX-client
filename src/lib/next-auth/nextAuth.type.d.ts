@@ -10,6 +10,7 @@ declare module "next-auth" {
       email: string;
       profile_image_url: string | null;
     } & DefaultSession["user"];
+    refreshTokenExpires: number;
   }
 
   interface User {
@@ -19,6 +20,7 @@ declare module "next-auth" {
     name: string;
     email: string;
     profile_image_url: string | null;
+    refreshTokenExpires: number;
   }
 }
 
@@ -30,5 +32,6 @@ declare module "next-auth/jwt" {
     name: string;
     email: string;
     profile_image_url: string | null;
+    refreshTokenExpires: number;
   }
 }
