@@ -11,11 +11,14 @@ export function useLogoutMutation() {
     mutationFn: () => signOut({ redirect: false }),
     onSuccess: () => {
       router.push("/login");
+
       toast({
         title: "Logout Success",
         message: "Logout Successfully Great!",
         type: "success",
       });
+
+      router.refresh();
     },
     onError: (error) => {
       toast({

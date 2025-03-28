@@ -30,6 +30,8 @@ export function useLoginMutation() {
         message: "Login Successfully Great!",
         type: "success",
       });
+
+      router.refresh();
     },
     onError: (error) => {
       toast({
