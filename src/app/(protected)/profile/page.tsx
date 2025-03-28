@@ -9,6 +9,7 @@ import { useDeleteAccountMutation } from "@/query/users/mutations/useDeleteAccou
 import ProfileImage from "@/app/(protected)/profile/_components/ProfileImage";
 
 function ProfilePage() {
+  // 리액트 쿼리로 바꿔라.. 존나 짜친다.
   const { data: userData } = useSession();
   const { mutate: logoutMutate, isPending: logoutIsPending } = useLogoutMutation();
   const { mutate: deleteAccount, isPending: deleteAccountIsPending } = useDeleteAccountMutation();

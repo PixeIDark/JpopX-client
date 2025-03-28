@@ -1,7 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useState } from "react";
-import { setTheme as setThemeUtil, Theme } from "@/utils/theme";
+import { setCookie } from "@/utils/cookies";
+
+export type Theme = "light" | "dark";
 
 type ThemeContextType = {
   theme: Theme;
@@ -20,7 +22,7 @@ export function ThemeProvider({ initialTheme, children }: ThemeProviderProps) {
   const toggleTheme = async () => {
     const newTheme = theme === "light" ? "dark" : "light";
     setThemeState(newTheme);
-    setThemeUtil(newTheme);
+    setCookie("theme", newTheme);
     document.documentElement.setAttribute("data-theme", newTheme);
   };
 
