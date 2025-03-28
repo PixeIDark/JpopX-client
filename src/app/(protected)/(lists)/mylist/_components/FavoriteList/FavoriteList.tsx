@@ -35,7 +35,7 @@ function FavoriteList({ list, dragAndDropHandler, index }: FavoriteListProps) {
       onDragEnter={() => handleDragEnter(list.order)}
       onDragEnd={() => handleDragEnd(list.user_id)}
       onDragOver={handleDragOver}
-      className={`flex items-center justify-between border border-body-default transition-colors duration-200 hover:opacity-60 ${isDragging ? "bg-button-ghost opacity-50" : ""} ${draggedItemId !== null && !isDragging ? "border-t-2 border-dashed border-solid-default" : ""} `}
+      className={`flex items-center justify-between py-[1px] transition-colors duration-200 hover:opacity-60 ${isDragging ? "bg-button-ghost opacity-50" : ""} ${draggedItemId !== null && !isDragging ? "border-t-2 border-dashed border-solid-default" : ""} `}
       data-id={list.id}
       data-order={list.order}
       data-index={index}
