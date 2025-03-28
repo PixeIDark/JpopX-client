@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { authApi } from "@/api/auth";
+import { setCookie } from "@/utils/cookies";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -77,6 +78,7 @@ export const authOptions: NextAuthOptions = {
   events: {
     async signOut({ token }) {
       if (token?.accessToken) await authApi.logout(token.accessToken);
+      await setCookie("status", "unauthenticated");
     },
   },
   callbacks: {
@@ -107,6 +109,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
+
   session: {
     strategy: "jwt",
     maxAge: 7 * 24 * 60 * 60,
