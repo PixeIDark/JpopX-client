@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { setCookie } from "@/utils/cookies";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -11,6 +12,9 @@ export async function middleware(request: NextRequest) {
   });
 
   const isAuthenticated = (token?.refreshTokenExpires ?? 0) > Date.now();
+  const status = isAuthenticated ? "authenticated" : "unauthenticated";
+  await setCookie("status", status);
+
   const protectedPaths = ["/mylist", "/profile", "/add-list"];
   const isProtectedRoute = protectedPaths.includes(pathname);
 
