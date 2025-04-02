@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { Minus } from "lucide-react";
+import { createPortal } from "react-dom";
 
 const initialValues = {
   isOpen: false,
@@ -89,7 +90,7 @@ function Content({ children, className = "" }: ContentProps) {
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-40 bg-black/50" onClick={handleOutClose}>
       <div
         className={`${className} absolute inset-x-0 bottom-0 mx-auto w-full max-w-md rounded-xl bg-body-default p-4`}
@@ -99,7 +100,8 @@ function Content({ children, className = "" }: ContentProps) {
         </button>
         <div>{children}</div>
       </div>
-    </div>
+    </div>,
+    document.getElementById("portal-root") || document.body
   );
 }
 
