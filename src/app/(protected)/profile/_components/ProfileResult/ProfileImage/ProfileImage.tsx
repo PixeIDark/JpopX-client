@@ -1,6 +1,6 @@
 import Picture from "@/components/ui/Picture";
 import { Save, Undo2 } from "lucide-react";
-import { useProfileImage } from "@/app/(protected)/profile/_components/ProfileImage/_hooks/useProfileImage";
+import { useProfileImage } from "@/app/(protected)/profile/_components/ProfileResult/ProfileImage/_hooks/useProfileImage";
 
 interface ProfileImageProps {
   profileImage: string;

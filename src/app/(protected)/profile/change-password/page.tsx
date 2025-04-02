@@ -7,9 +7,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
 import PasswordField from "@/components/common/Field/PasswordField";
-import { useUpdatePasswordMutation } from "@/query/users";
+import { useUpdatePasswordMutation } from "@/query/users/";
 
-function ChangePassword() {
+function ChangePasswordPage() {
   const { data: userData } = useSession();
   const {
     register,
@@ -60,4 +60,4 @@ function ChangePassword() {
   );
 }
 
-export default ChangePassword;
+export default ChangePasswordPage;
