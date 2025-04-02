@@ -1,11 +1,12 @@
-import React from "react";
 import Picture from "@/components/ui/Picture";
 import { Save, Undo2 } from "lucide-react";
-import { useSession } from "next-auth/react";
 import { useProfileImage } from "@/app/(protected)/profile/_components/ProfileImage/_hooks/useProfileImage";
 
-function ProfileImage() {
-  const { data: userData } = useSession();
+interface ProfileImageProps {
+  profileImage: string;
+}
+
+function ProfileImage({ profileImage }: ProfileImageProps) {
   const {
     selectedFile,
     previewUrl,
@@ -21,7 +22,7 @@ function ProfileImage() {
     <div className="relative w-fit">
       <button onClick={handleImageClick} disabled={updateIsPending}>
         <Picture
-          src={previewUrl || userData?.user.profile_image_url}
+          src={previewUrl || profileImage}
           className="h-32 w-32 rounded-full bg-icon-stroke"
         />
       </button>

@@ -8,18 +8,19 @@ import ProfileImage from "@/app/(protected)/profile/_components/ProfileImage";
 import { useProfileQuery } from "@/query/users/queries/useProfileQuery";
 
 function ProfilePage() {
-  // 리액트 쿼리로 바꿔라.. 존나 짜친다.
   const { data: userData } = useProfileQuery();
   const { mutate: logoutMutate, isPending: logoutIsPending } = useLogoutMutation();
   const { mutate: deleteAccount, isPending: deleteAccountIsPending } = useDeleteAccountMutation();
 
+  if (!userData) return null;
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-4 py-4">
-        <ProfileImage />
+        <ProfileImage profileImage={userData.profile_image_url} />
         <div>
-          <h1 className="text-xl font-medium text-text-h">{userData?.name}</h1>
-          <p className="font-light text-text-p">{userData?.email}</p>
+          <h1 className="text-xl font-medium text-text-h">{userData.name}</h1>
+          <p className="font-light text-text-p">{userData.email}</p>
         </div>
       </div>
       <div className="flex flex-col gap-3">
