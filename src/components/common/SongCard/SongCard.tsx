@@ -1,14 +1,14 @@
 import { SearchItems } from "@/types/search.type";
 import Picture from "@/components/ui/Picture";
 import AddSongToListButton from "@/components/common/SongCard/AddSongToListButton/AddSongToListButton";
+import { songProcessor } from "@/utils/services/songProcessor";
 
 interface SongCardProps {
   song: SearchItems;
 }
 
 function SongCard({ song }: SongCardProps) {
-  const title = song.title_ko || song.title_ja;
-  const artist = song.artist_ko || song.artist_ja;
+  const { title, artist, tjNumber, kyNumber } = songProcessor(song);
 
   return (
     <ul className="flex flex-row gap-1">
@@ -33,8 +33,8 @@ function SongCard({ song }: SongCardProps) {
           {artist}
         </p>
         <div className="flex gap-2 text-sm">
-          <p className="w-16 text-text-tj">TJ {song.tj_number}</p>
-          <p className="text-text-ky">KY {song.kumyoung_number}</p>
+          <p className="w-16 text-text-tj">TJ {tjNumber}</p>
+          <p className="text-text-ky">KY {kyNumber}</p>
         </div>
       </div>
       <AddSongToListButton songId={song.song_id} />

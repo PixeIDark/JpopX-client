@@ -1,7 +1,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast/useToast";
-import { createCallbackUrl } from "@/utils/createCallbackUrl";
+import { createCallbackUrl } from "@/utils/helpers/createCallbackUrl";
 
 export function useAddSongToListButton(songId: number) {
   const { status } = useSession();

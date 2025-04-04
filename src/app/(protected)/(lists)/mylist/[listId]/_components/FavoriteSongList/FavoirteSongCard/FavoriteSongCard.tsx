@@ -2,6 +2,7 @@ import Picture from "@/components/ui/Picture";
 import { FavoriteListSong } from "@/types/favorite-list.type";
 import RemoveSongButton from "@/app/(protected)/(lists)/mylist/[listId]/_components/FavoriteSongList/FavoirteSongCard/RemoveSongButton";
 import React from "react";
+import { songProcessor } from "@/utils/services/songProcessor";
 
 interface DragAndDropHandler {
   draggedItemId: number | null;
@@ -20,9 +21,7 @@ interface SongCardProps {
 function FavoriteSongCard({ song, listId, dragAndDropHandler }: SongCardProps) {
   const { draggedItemId, handleDragEnter, handleDragOver, handleDragStart, handleDragEnd } =
     dragAndDropHandler;
-  const title = song.title_ko || song.title_ja;
-  const artist = song.artist_ko || song.artist_ja;
-
+  const { title, artist, tjNumber, kyNumber } = songProcessor(song);
   const isDragging = draggedItemId === listId;
 
   return (
@@ -55,8 +54,8 @@ function FavoriteSongCard({ song, listId, dragAndDropHandler }: SongCardProps) {
           {artist}
         </p>
         <div className="flex gap-2 text-sm">
-          <p className="w-16 text-text-tj">TJ {song.tj_number}</p>
-          <p className="text-text-ky">KY {song.kumyoung_number}</p>
+          <p className="w-16 text-text-tj">TJ {tjNumber}</p>
+          <p className="text-text-ky">KY {kyNumber}</p>
         </div>
       </div>
       <RemoveSongButton listId={listId} favoriteId={song.id} />
