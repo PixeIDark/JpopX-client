@@ -5,7 +5,7 @@ import Picture from "@/components/ui/Picture";
 import CheckFavoriteList from "@/app/(protected)/(lists)/add-list/[songId]/_components/AddToList/CheckFavoriteList";
 import { useAddToListToggle } from "@/app/(protected)/(lists)/add-list/[songId]/_components/AddToList/_hooks/useAddToListToggle";
 import Link from "next/link";
-import { getTimeAgo } from "@/utils/getTimeAgo";
+import { getTimeAgo } from "@/utils/helpers/getTimeAgo";
 
 interface FavoriteListProps {
   list: List;

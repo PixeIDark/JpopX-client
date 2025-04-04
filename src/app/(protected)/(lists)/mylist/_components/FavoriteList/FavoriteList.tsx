@@ -5,7 +5,7 @@ import Picture from "@/components/ui/Picture";
 import Link from "next/link";
 import ListControlled from "@/app/(protected)/(lists)/mylist/_components/FavoriteList/ListControlled";
 import React from "react";
-import { getTimeAgo } from "@/utils/getTimeAgo";
+import { getTimeAgo } from "@/utils/helpers/getTimeAgo";
 
 interface DragAndDropHandler {
   draggedItemId: number | null;

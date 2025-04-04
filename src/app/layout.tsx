@@ -10,7 +10,7 @@ import ToastProvider from "@/components/ui/Toast/ToastContext";
 import { ScrollPositionProvider } from "@/app/_providers/ScrollPositionProvider";
 import Main from "@/app/_layout/Main";
 import { Theme, ThemeProvider } from "@/app/_providers/ThemeProvider";
-import { getCookie } from "@/utils/cookies";
+import { getCookie } from "@/utils/helpers/cookies";
 import { Status } from "@/app/_layout/BottomNav/BottomNav";
 
 const manrope = Manrope({

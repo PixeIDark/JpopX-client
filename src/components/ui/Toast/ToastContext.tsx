@@ -3,7 +3,7 @@
 import React, { createContext, ReactNode, useCallback, useState } from "react";
 import ToastContainer from "./ToastContainer";
 import { ToastType } from "./Toast";
-import { generateUUID } from "@/utils/generateUUID";
+import { generateUUID } from "@/utils/helpers/generateUUID";
 
 export interface ToastItem {
   id: string;

@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast/useToast";
-import { encrypt } from "@/utils/encrypt";
+import { encrypt } from "@/utils/helpers/encrypt";
 
 interface VerifyPasswordParams {
   email: string | undefined;

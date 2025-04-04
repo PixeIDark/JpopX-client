@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState } from "react";
-import { setCookie } from "@/utils/cookies";
+import { setCookie } from "@/utils/helpers/cookies";
 
 export type Theme = "light" | "dark";
 

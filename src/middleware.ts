@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { setCookie } from "@/utils/cookies";
+import { setCookie } from "@/utils/helpers/cookies";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

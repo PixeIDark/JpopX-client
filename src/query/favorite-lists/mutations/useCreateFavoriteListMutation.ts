@@ -3,8 +3,8 @@ import { favoriteListsApi } from "@/api/favorite-lists";
 import { CreateFavoriteListRequest, FavoriteList } from "@/types/favorite-list.type";
 import { useToast } from "@/components/ui/Toast/useToast";
 import { getFavoriteListsKey } from "@/query/favorite-lists";
-import { getRandomInteger } from "@/utils/getRandomInteger";
-import { getKoreanISOTime } from "@/utils/getKoreanISOTime";
+import { getRandomInteger } from "@/utils/helpers/getRandomInteger";
+import { getKoreanISOTime } from "@/utils/helpers/getKoreanISOTime";
 
 export function useCreateFavoriteListMutation() {
   const queryClient = useQueryClient();

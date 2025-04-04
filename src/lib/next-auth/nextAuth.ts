@@ -1,7 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { authApi } from "@/api/auth";
-import { setCookie } from "@/utils/cookies";
+import { setCookie } from "@/utils/helpers/cookies";
 
 export const authOptions: NextAuthOptions = {
   providers: [

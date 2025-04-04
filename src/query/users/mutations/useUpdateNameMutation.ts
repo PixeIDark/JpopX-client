@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast/useToast";
 import { usersApi } from "@/api/users";
 import { NameSchema } from "@/lib/zod/auth";
-import { decrypt } from "@/utils/decrypt";
+import { decrypt } from "@/utils/helpers/decrypt";
 
 interface UpdateNameParams {
   data: NameSchema;

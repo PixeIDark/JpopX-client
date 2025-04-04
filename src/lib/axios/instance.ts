@@ -1,7 +1,7 @@
 import axios from "axios";
 import { signIn, signOut } from "next-auth/react";
 import { authApi } from "@/api/auth";
-import { getIsomorphicSession } from "@/utils/getIsomorphicSession";
+import { getIsomorphicSession } from "@/utils/helpers/getIsomorphicSession";
 
 export const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
