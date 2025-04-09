@@ -1,10 +1,10 @@
 "use client";
 
 import { MdLightMode, MdOutlineNightlightRound } from "react-icons/md";
-import { useTheme } from "@/app/_providers/ThemeProvider";
+import { Theme, useTheme } from "@/app/_layout/TopNav/ThemeToggle/_hooks/useTheme";
 
-function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme();
+function ThemeToggle({ initialTheme }: { initialTheme: Theme }) {
+  const { theme, toggleTheme } = useTheme(initialTheme);
 
   return (
     <button

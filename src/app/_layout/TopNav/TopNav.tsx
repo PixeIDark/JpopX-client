@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import ThemeToggle from "@/app/_layout/TopNav/ThemeToggle";
+import { Theme } from "@/app/_layout/TopNav/ThemeToggle/_hooks/useTheme";
 
 const NAV_TITLE = {
   "/": "Home",
@@ -15,7 +16,7 @@ const NAV_TITLE = {
   "/profile": "Profile",
 } as const;
 
-function TopNav() {
+function TopNav({ initialTheme }: { initialTheme: Theme }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -32,7 +33,7 @@ function TopNav() {
       <Link href="/">
         <h1 className="text-lg font-semibold text-text-h">{title}</h1>
       </Link>
-      <ThemeToggle />
+      <ThemeToggle initialTheme={initialTheme} />
     </div>
   );
 }

@@ -9,9 +9,9 @@ import BottomNav from "@/app/_layout/BottomNav";
 import ToastProvider from "@/components/ui/Toast/ToastContext";
 import { ScrollPositionProvider } from "@/app/_providers/ScrollPositionProvider";
 import Main from "@/app/_layout/Main";
-import { Theme, ThemeProvider } from "@/app/_providers/ThemeProvider";
 import { getCookie } from "@/utils/helpers/cookies";
 import { Status } from "@/app/_layout/BottomNav/BottomNav";
+import { Theme } from "@/app/_layout/TopNav/ThemeToggle/_hooks/useTheme";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -31,24 +31,22 @@ async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const theme = (await getCookie<Theme>("theme")) ?? "light";
+  const initialTheme = (await getCookie<Theme>("theme")) ?? "light";
   const status = (await getCookie<Status>("status")) ?? "unauthenticated";
 
   return (
-    <html lang="ko" data-theme={theme} suppressHydrationWarning>
+    <html lang="ko" data-theme={initialTheme} suppressHydrationWarning>
       <body className={`${manrope.variable} antialiasing`}>
         <SessionProvider>
           <QueryProvider>
             <ScrollPositionProvider>
-              <ThemeProvider initialTheme={theme}>
-                <div className="mx-auto flex h-screen max-w-lg flex-col">
-                  <ToastProvider maxToasts={5}>
-                    <TopNav />
-                    <Main>{children}</Main>
-                    <BottomNav status={status} />
-                  </ToastProvider>
-                </div>
-              </ThemeProvider>
+              <div className="mx-auto flex h-screen max-w-lg flex-col">
+                <ToastProvider maxToasts={5}>
+                  <TopNav initialTheme={initialTheme} />
+                  <Main>{children}</Main>
+                  <BottomNav status={status} />
+                </ToastProvider>
+              </div>
             </ScrollPositionProvider>
           </QueryProvider>
         </SessionProvider>
