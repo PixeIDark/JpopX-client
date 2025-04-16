@@ -10,7 +10,7 @@ interface SearchFilterProps {
 const SEARCH_TYPES = ["both", "title", "artist"] as const;
 
 function SearchFilter({ initialSearchType }: SearchFilterProps) {
-  const { choiceParam, applyQueryParams } = useQueryParamState(initialSearchType, "search");
+  const { choiceParam, applyQueryParams } = useQueryParamState(initialSearchType, "searchType");
 
   return (
     <div className="flex gap-3">
