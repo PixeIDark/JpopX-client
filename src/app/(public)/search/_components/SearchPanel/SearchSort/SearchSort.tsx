@@ -2,7 +2,6 @@
 
 import Button from "@/components/ui/Button";
 import { Sort } from "@/types/search.type";
-import React from "react";
 import { useQueryParamState } from "@/hooks/useQueryParamState";
 
 interface SearchSortProps {

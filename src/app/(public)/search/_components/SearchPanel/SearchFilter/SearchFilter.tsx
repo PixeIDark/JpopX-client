@@ -1,5 +1,6 @@
+"use client";
+
 import Button from "@/components/ui/Button";
-import React from "react";
 import { SearchType } from "@/types/search.type";
 import { useQueryParamState } from "@/hooks/useQueryParamState";
 
