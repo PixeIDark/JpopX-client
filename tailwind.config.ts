@@ -49,6 +49,8 @@ module.exports = {
         icon: {
           stroke: "var(--color-icon-stroke)",
           bg: "var(--color-icon-bg)",
+          check: "#4CAF50",
+          close: "#f44336",
         },
         solid: {
           default: "var(--color-solid-default)",
