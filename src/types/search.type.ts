@@ -11,7 +11,7 @@ export interface SearchRequest {
   page?: number;
 }
 
-export type SearchPanelParams = Omit<SearchRequest, "limit" | "page">;
+export type SearchPanelParams = SearchRequest;
 
 export interface SearchItems {
   id: number;

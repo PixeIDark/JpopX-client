@@ -9,7 +9,7 @@ export const searchApi = async (params: SearchRequest) => {
       text: params.text || "",
       searchType: params.searchType || "both",
       sort: params.sort || "popular",
-      limit: params.limit || 20,
+      limit: params.limit || 10,
       page: params.page || 1,
     },
   });

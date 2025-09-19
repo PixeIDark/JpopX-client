@@ -12,10 +12,10 @@ export const searchQueryOption = (params: SearchPanelParams) =>
     }),
     queryFn: () =>
       searchApi({
-        text: params.text || "",
-        searchType: params.searchType || "both",
-        sort: params.sort || "popular",
-        page: 1,
-        limit: 10,
+        text: params.text,
+        searchType: params.searchType,
+        sort: params.sort,
+        page: params.page,
+        limit: params.limit,
       }),
   });

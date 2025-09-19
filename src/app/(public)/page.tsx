@@ -8,11 +8,13 @@ export const dynamic = "force-dynamic";
 async function HomePage() {
   const queryClient = getServerQueryClient();
 
-  queryClient.prefetchQuery(searchQueryOption({ text: "", searchType: "both", sort: "popular" }));
+  queryClient.prefetchQuery(
+    searchQueryOption({ text: "", searchType: "both", sort: "popular", limit: 20 })
+  );
 
   return (
     <div>
-      <h1 className="py-2 text-center text-text-p">Top 10</h1>
+      <h1 className="py-2 text-center text-text-p">Top 20</h1>
       <HydrationBoundary state={dehydrate(queryClient)}>
         <PopularityList />
       </HydrationBoundary>

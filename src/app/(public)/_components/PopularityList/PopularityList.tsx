@@ -6,7 +6,7 @@ import SongCard from "@/components/common/SongCard";
 
 function PopularityList() {
   const { data: songs } = useSuspenseQuery(
-    searchQueryOption({ text: "", searchType: "both", sort: "popular" })
+    searchQueryOption({ text: "", searchType: "both", sort: "popular", limit: 20 })
   );
 
   if (!songs) return null;
