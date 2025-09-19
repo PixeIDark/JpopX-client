@@ -5,6 +5,7 @@ import SearchFill from "@/assets/icons/search/search_fill.svg";
 import MyList from "@/assets/icons/myLists/myLists.svg";
 import MyListFill from "@/assets/icons/myLists/myLists_fill.svg";
 import Profile from "@/assets/icons/profile/profile.svg";
+import ProfileFill from "@/assets/icons/profile/profile_fill.svg";
 import LogIn from "@/assets/icons/login/login.svg";
 
 export const BASE_NAV_ITEMS = [
@@ -32,6 +33,7 @@ export const PROFILE_ITEM = {
   path: "/profile",
   label: "Profile",
   Icon: Profile,
+  IconFill: ProfileFill,
 } as const;
 
 export const LOGIN_ITEM = {

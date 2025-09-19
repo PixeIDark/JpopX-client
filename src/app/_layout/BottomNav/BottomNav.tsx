@@ -17,9 +17,10 @@ interface BottomNavProps {
 function BottomNav({ status }: BottomNavProps) {
   const segment = useSelectedLayoutSegments();
 
-  if (segment[0] === "(auth)" || segment[1] === "profile") return null;
+  if (segment[0] === "(auth)") return null;
 
   const NAV_ITEMS = [...BASE_NAV_ITEMS, status === "authenticated" ? PROFILE_ITEM : LOGIN_ITEM];
+  console.log(NAV_ITEMS);
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-10 mx-auto flex w-full max-w-lg items-center justify-between border-t border-solid-default bg-body-default px-4 pb-3 pt-5">
