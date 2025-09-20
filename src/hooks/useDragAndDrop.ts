@@ -2,9 +2,7 @@ import React, { useCallback, useRef, useState } from "react";
 import { UseMutateFunction } from "@tanstack/react-query";
 import { ReorderListRequest, ReorderSongRequest } from "@/types/favorite-list.type";
 
-export function useDragAndDrop(
-  mutate: UseMutateFunction<ReorderSongRequest | ReorderListRequest, Error, unknown>
-) {
+export function useDragAndDrop<T>(mutate: UseMutateFunction<any, Error, T, unknown>) {
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
   const dragStartIndex = useRef<number | null>(null);
   const dragEndIndex = useRef<number | null>(null);
