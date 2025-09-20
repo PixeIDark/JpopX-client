@@ -8,7 +8,7 @@ export function useDragAndDrop<T>(mutate: UseMutateFunction<any, Error, T, unkno
   const autoScrollRequest = useRef<number | null>(null);
 
   const autoScroll = useCallback((clientY: number) => {
-    const SCROLL_SPEED = 10;
+    const SCROLL_SPEED = 1;
     const TOP_SCROLL_ZONE = 90;
     const BOTTOM_SCROLL_ZONE = 150;
     const windowHeight = window.innerHeight;
@@ -34,7 +34,6 @@ export function useDragAndDrop<T>(mutate: UseMutateFunction<any, Error, T, unkno
     scroll();
   }, []);
 
-  // 자동 스크롤 중지
   const stopAutoScroll = useCallback(() => {
     if (autoScrollRequest.current) {
       cancelAnimationFrame(autoScrollRequest.current);
