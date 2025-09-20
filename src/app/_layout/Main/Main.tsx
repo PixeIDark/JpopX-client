@@ -15,10 +15,8 @@ function Main({ children }: { children: React.ReactNode }) {
   const blackClass = isIOS ? "h-[170px] w-full" : "h-[77px] w-full";
 
   return (
-    <main ref={scrollRef} className={`h-full ${overflowClass} ${paddingClass}`}>
-      <div className="h-[72px] w-full" />
+    <main ref={scrollRef} className={`mb-[77px] mt-[72px] h-full ${overflowClass} ${paddingClass}`}>
       {children}
-      <div className={blackClass} />
     </main>
   );
 }
