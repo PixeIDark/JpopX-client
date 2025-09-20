@@ -9,7 +9,7 @@ import { getTimeAgo } from "@/utils/helpers/getTimeAgo";
 
 interface DragAndDropHandler {
   draggedItemId: number | null;
-  handleDragStart: (id: number, order: number) => void;
+  handleDragStart: (id: number, order: number, event?: React.DragEvent) => void; // 이벤트 매개변수 추가
   handleDragEnter: (order: number) => void;
   handleDragEnd: (userId: number) => void;
   handleDragOver: (e: React.DragEvent) => void;
@@ -28,13 +28,18 @@ function FavoriteList({ list, dragAndDropHandler, index }: FavoriteListProps) {
   const isDragging = draggedItemId === list.id;
   const updatedTime = getTimeAgo(list.updated_at);
 
+  const onDragStart = (e: React.DragEvent) => handleDragStart(list.id, list.order, e);
+  const onDragEnter = () => handleDragEnter(list.order);
+  const onDragEnd = () => handleDragEnd(list.user_id);
+  const onDragOver = (e: React.DragEvent) => handleDragOver(e);
+
   return (
     <ul
       draggable={true}
-      onDragStart={() => handleDragStart(list.id, list.order)}
-      onDragEnter={() => handleDragEnter(list.order)}
-      onDragEnd={() => handleDragEnd(list.user_id)}
-      onDragOver={handleDragOver}
+      onDragStart={onDragStart} // 수정된 핸들러 사용
+      onDragEnter={onDragEnter}
+      onDragEnd={onDragEnd}
+      onDragOver={onDragOver}
       className={`flex items-center justify-between py-[1px] transition-colors duration-200 hover:opacity-60 ${isDragging ? "bg-button-ghost opacity-50" : ""} ${draggedItemId !== null && !isDragging ? "border-t-2 border-dashed border-solid-default" : ""} `}
       data-id={list.id}
       data-order={list.order}

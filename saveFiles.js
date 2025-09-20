@@ -26,4 +26,4 @@ function saveFilesAsTxt(directory, outputFile) {
 }
 
 // src 폴더 경로와 출력될 텍스트 파일 경로 지정
-saveFilesAsTxt("src", "server.txt");
+saveFilesAsTxt("src", "client.txt");
