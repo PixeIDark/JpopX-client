@@ -1,6 +1,5 @@
 import React, { useCallback, useRef, useState } from "react";
 import { UseMutateFunction } from "@tanstack/react-query";
-import { ReorderListRequest, ReorderSongRequest } from "@/types/favorite-list.type";
 
 export function useDragAndDrop<T>(mutate: UseMutateFunction<any, Error, T, unknown>) {
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
@@ -115,19 +114,16 @@ export function useDragAndDrop<T>(mutate: UseMutateFunction<any, Error, T, unkno
         dragEndIndex.current !== null &&
         dragStartIndex.current !== dragEndIndex.current
       ) {
-        const mutateData =
-          userId !== -1
-            ? ({
-                userId,
-                listId: draggedItemId,
-                newOrder: dragEndIndex.current,
-              } as ReorderListRequest)
-            : ({
-                favoriteId: draggedItemId,
-                newOrder: dragEndIndex.current,
-              } as ReorderSongRequest);
+        const mutateData: any = {
+          newOrder: dragEndIndex.current,
+        };
 
-        mutate(mutateData as ReorderSongRequest | ReorderListRequest);
+        if (userId !== -1) {
+          mutateData.userId = userId;
+          mutateData.listId = draggedItemId;
+        } else mutateData.favoriteId = draggedItemId;
+
+        mutate(mutateData);
       }
 
       setDraggedItemId(null);
