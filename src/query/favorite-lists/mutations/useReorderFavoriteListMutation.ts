@@ -11,6 +11,7 @@ export function useReorderFavoriteListMutation() {
   return useMutation({
     mutationFn: (data: ReorderListRequest) => favoriteListsApi.reorderList(data),
     onMutate: async (data) => {
+      console.time("reorder");
       await queryClient.cancelQueries({ queryKey: getFavoriteListsKey() });
 
       const previousLists = queryClient.getQueryData<FavoriteList[]>(getFavoriteListsKey());
@@ -23,7 +24,8 @@ export function useReorderFavoriteListMutation() {
 
         queryClient.setQueryData(getFavoriteListsKey(), updatedLists);
       }
-
+      
+      console.timeEnd("reorder");
       return { previousLists };
     },
     onSuccess: () => {
