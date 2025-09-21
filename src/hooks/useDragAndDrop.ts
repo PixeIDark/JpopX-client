@@ -10,7 +10,7 @@ export function useDragAndDrop<T>(mutate: UseMutateFunction<any, Error, T, unkno
   const autoScroll = useCallback((clientY: number) => {
     const SCROLL_SPEED = 1;
     const TOP_SCROLL_ZONE = 90;
-    const BOTTOM_SCROLL_ZONE = 150;
+    const BOTTOM_SCROLL_ZONE = 110;
     const windowHeight = window.innerHeight;
 
     if (autoScrollRequest.current) {
