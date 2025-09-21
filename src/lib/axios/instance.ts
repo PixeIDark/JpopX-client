@@ -32,7 +32,7 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-const MAX_RETRIES = 3;
+const MAX_RETRIES = 1;
 
 axiosInstance.interceptors.response.use(
   function (response) {
