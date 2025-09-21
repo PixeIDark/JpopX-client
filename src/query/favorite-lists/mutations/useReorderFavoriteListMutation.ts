@@ -33,8 +33,8 @@ export function useReorderFavoriteListMutation() {
     },
     onSuccess: () => {
       toast({
-        title: "목록 순서 변경 완료",
-        message: "목록 순서가 성공적으로 변경되었습니다",
+        title: "List Order Changed Successfully",
+        message: "List Order Changed Successfully",
         type: "success",
       });
     },
