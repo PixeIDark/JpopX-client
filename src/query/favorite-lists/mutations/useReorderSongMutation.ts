@@ -17,10 +17,16 @@ export function useReorderSongMutation(listId: number) {
       );
 
       if (previousSongs) {
-        const updatedSongs = previousSongs.map((song) => {
-          if (song.id === data.favoriteId) song.order = data.newOrder + 0.5;
-          return song;
-        });
+        const updatedSongs = previousSongs
+          .map((song) => {
+            if (song.id === data.favoriteId) {
+              const offset = song.order < data.newOrder ? 0.5 : -0.5;
+
+              return { ...song, order: data.newOrder + offset };
+            }
+            return song;
+          })
+          .toSorted((a, b) => a.order - b.order);
 
         queryClient.setQueryData(getFavoriteListSongsKey(listId), updatedSongs);
       }
