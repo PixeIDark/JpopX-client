@@ -11,21 +11,24 @@ export function useReorderFavoriteListMutation() {
   return useMutation({
     mutationFn: (data: ReorderListRequest) => favoriteListsApi.reorderList(data),
     onMutate: async (data) => {
-      console.time("reorder");
       await queryClient.cancelQueries({ queryKey: getFavoriteListsKey() });
-
       const previousLists = queryClient.getQueryData<FavoriteList[]>(getFavoriteListsKey());
 
       if (previousLists) {
-        const updatedLists = previousLists.map((list) => {
-          if (list.id === data.listId) list.order = data.newOrder + 0.5;
-          return list;
-        });
+        const updatedLists = previousLists
+          .map((list) => {
+            if (list.id === data.listId) {
+              const offset = list.order < data.newOrder ? 0.5 : -0.5;
+
+              return { ...list, order: data.newOrder + offset };
+            }
+            return list;
+          })
+          .toSorted((a, b) => a.order - b.order);
 
         queryClient.setQueryData(getFavoriteListsKey(), updatedLists);
       }
-      
-      console.timeEnd("reorder");
+
       return { previousLists };
     },
     onSuccess: () => {
